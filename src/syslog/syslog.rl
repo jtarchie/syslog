@@ -1,15 +1,30 @@
 package syslog
 
-import "fmt"
-
-type message struct{
-  Version uint64
-}
+import (
+  "fmt"
+  "strconv"
+  "time"
+)
 
 %%{
   machine syslog_rfc5424;
   write data;
 }%%
+
+var timestampFormats = []string{
+  "2006-01-02T15:04:05.999999999-07:00",
+  "2006-01-02T15:04:05-07:00",
+  "2006-01-02T15:04:05.999999999Z",
+  "2006-01-02T15:04:05Z",
+}
+
+func stringPtr(d []byte) *string {
+  s := string(d)
+  if s == "-" {
+    return nil
+  }
+  return &s
+}
 
 func Parser(data []byte) (*message, error) {
   msg := &message{}
@@ -17,12 +32,40 @@ func Parser(data []byte) (*message, error) {
   // set defaults for state machine parsing
   cs, p, pe := 0, 0, len(data)
 
+  // use to keep track start of value
+  mark, paramName := 0, ""
+
   // taken directly from https://tools.ietf.org/html/rfc5424#page-8
   %%{
+    action mark       { mark = p }
+    action version    { msg.version, _ = strconv.Atoi(string(data[mark:p])) }
+    action priority   { msg.priority, _ = strconv.Atoi(string(data[mark:p])) }
+    action timestamp  {
+      for _, format := range timestampFormats {
+        t, err := time.Parse(format, string(data[mark:p]))
+        if err == nil {
+          msg.timestamp = &t
+          break
+        }
+      }
+    }
+    action hostname   { msg.hostname = stringPtr(data[mark:p]) }
+    action appname    { msg.appname = stringPtr(data[mark:p]) }
+    action procid     { msg.procID = stringPtr(data[mark:p]) }
+    action msgid      { msg.msgID = stringPtr(data[mark:p]) }
+    action sdid       {
+      msg.data = &structureData{
+        id: string(data[mark:p]),
+        properties: make(map[string]string),
+      }
+    }
+    action paramname  { paramName = string(data[mark:p]) }
+    action paramvalue { msg.data.properties[paramName] = string(data[mark:p]) }
+
     nil           = "-";
-    nonzero_digit = 49..57;
-    printusascii  = 33..126;
-    sp            = 32;
+    nonzero_digit = "1".."9";
+    printusascii  = "!".."~";
+    sp            = " ";
     octet         = 0..255;
 
     utf8_string = octet*;
@@ -31,12 +74,13 @@ func Parser(data []byte) (*message, error) {
     msg_any     = octet*;
     msg         = msg_any | msg_utf8;
 
-    sd_name         = printusascii {1,32} -- ("=" | sp | "]" | 34 | '"');
-    param_value     = utf8_string;
-    param_name      = sd_name;
-    sd_id           = sd_name;
-    sd_element      = param_name "=" 34 param_value 34;
-    structured_data = nil | sd_element+;
+    sd_name         = printusascii{1,32} -- ("=" | sp | "]" | 34 | '"');
+    param_value     = utf8_string >mark %paramvalue;
+    param_name      = sd_name >mark %paramname;
+    sd_id           = sd_name >mark %sdid;
+    sd_param        = param_name "=" '"' param_value '"';
+    sd_element      = "[" sd_id ( sp sd_param )* "]";
+    structured_data = nil | sd_element{,1};
 
     time_hour      = digit{,2};
     time_minute    = digit{,2};
@@ -50,15 +94,15 @@ func Parser(data []byte) (*message, error) {
     date_month     = digit{,2};
     date_fullyear  = digit{,4};
     full_date      = date_fullyear "-" date_month "-" date_mday;
-    timestamp      = nil | full_date "T" full_time;
+    timestamp      = nil | (full_date "T" full_time) >mark %timestamp;
 
-    msg_id   = nil | printusascii{1,32};
-    proc_id  = nil | printusascii{1,128};
-    app_name = nil | printusascii{1,48};
+    msg_id   = (nil | printusascii{1,32}) >mark %msgid;
+    proc_id  = (nil | printusascii{1,128}) >mark %procid;
+    app_name = (nil | printusascii{1,48}) >mark %appname;
 
-    hostname = nil | printusascii{1,255};
-    version  = nonzero_digit digit{0,2};
-    prival   = digit{1,3};
+    hostname = (nil | printusascii{1,255}) >mark %hostname;
+    version  = (nonzero_digit digit{0,2}) >mark %version;
+    prival   = digit{1,3} >mark %priority;
     pri      = "<" prival ">";
     header   = pri version sp timestamp sp hostname sp app_name sp proc_id sp msg_id;
 
