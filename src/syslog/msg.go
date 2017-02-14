@@ -1,19 +1,24 @@
 package syslog
 
-//go:generate ragel -Z syslog.rl
+//go:generate ragel -G2 -Z syslog.rl
 
 import "time"
 
-type structureData struct {
-	id         string
-	properties map[string]string
+type Property struct {
+	Key   []byte
+	Value []byte
 }
 
-func (s *structureData) ID() string {
+type structureData struct {
+	id         []byte
+	properties []Property
+}
+
+func (s *structureData) ID() []byte {
 	return s.id
 }
 
-func (s *structureData) Properties() map[string]string {
+func (s *structureData) Properties() []Property {
 	return s.properties
 }
 
@@ -21,10 +26,10 @@ type message struct {
 	version   int
 	priority  int
 	timestamp *time.Time
-	hostname  *string
-	appname   *string
-	procID    *string
-	msgID     *string
+	hostname  []byte
+	appname   []byte
+	procID    []byte
+	msgID     []byte
 	data      *structureData
 }
 
@@ -48,19 +53,19 @@ func (m *message) Timestamp() *time.Time {
 	return m.timestamp
 }
 
-func (m *message) Hostname() *string {
+func (m *message) Hostname() []byte {
 	return m.hostname
 }
 
-func (m *message) Appname() *string {
+func (m *message) Appname() []byte {
 	return m.appname
 }
 
-func (m *message) ProcID() *string {
+func (m *message) ProcID() []byte {
 	return m.procID
 }
 
-func (m *message) MsgID() *string {
+func (m *message) MsgID() []byte {
 	return m.msgID
 }
 

@@ -2,7 +2,7 @@ package syslog
 
 import (
   "fmt"
-  "strconv"
+  "bytes"
   "time"
 )
 
@@ -11,96 +11,128 @@ import (
   write data;
 }%%
 
-var timestampFormats = []string{
-  "2006-01-02T15:04:05.999999999-07:00",
-  "2006-01-02T15:04:05-07:00",
-  "2006-01-02T15:04:05.999999999Z",
-  "2006-01-02T15:04:05Z",
-}
+var nilValue = []byte("-")
 
-func stringPtr(d []byte) *string {
-  s := string(d)
-  if s == "-" {
+func bytesRef(a []byte) []byte {
+  if bytes.Compare(a, nilValue) == 0 {
     return nil
   }
-  return &s
+  return a
+}
+
+func atoi(a []byte) int {
+  var x int
+  for _, c := range a {
+    x = x * 10 + int(c - '0')
+  }
+  return x
+}
+
+func power(value, times int) int {
+  for i := 0; i < times; i++ {
+    value *= 10
+  }
+  return value
+}
+
+type timestamp struct{
+  year, month, day, hour, minute, second, nsec int
 }
 
 func Parser(data []byte) (*message, error) {
-  msg := &message{}
+  var (
+    paramName []byte
+    t time.Time
+  )
+  msg, timestamp := &message{}, timestamp{}
 
   // set defaults for state machine parsing
   cs, p, pe := 0, 0, len(data)
 
   // use to keep track start of value
-  mark, paramName := 0, ""
+  mark := 0
 
   // taken directly from https://tools.ietf.org/html/rfc5424#page-8
   %%{
-    action mark       { mark = p }
-    action version    { msg.version, _ = strconv.Atoi(string(data[mark:p])) }
-    action priority   { msg.priority, _ = strconv.Atoi(string(data[mark:p])) }
-    action timestamp  {
-      for _, format := range timestampFormats {
-        t, err := time.Parse(format, string(data[mark:p]))
-        if err == nil {
-          msg.timestamp = &t
-          break
-        }
-      }
-    }
-    action hostname   { msg.hostname = stringPtr(data[mark:p]) }
-    action appname    { msg.appname = stringPtr(data[mark:p]) }
-    action procid     { msg.procID = stringPtr(data[mark:p]) }
-    action msgid      { msg.msgID = stringPtr(data[mark:p]) }
-    action sdid       {
+    action mark      { mark = p }
+    action version   { msg.version = atoi(data[mark:p]) }
+    action priority  { msg.priority = atoi(data[mark:p]) }
+    action hostname  { msg.hostname = bytesRef(data[mark:p]) }
+    action appname   { msg.appname = bytesRef(data[mark:p]) }
+    action procid    { msg.procID = bytesRef(data[mark:p]) }
+    action msgid     { msg.msgID = bytesRef(data[mark:p]) }
+    action sdid      {
       msg.data = &structureData{
-        id: string(data[mark:p]),
-        properties: make(map[string]string),
+        id: data[mark:p],
+        properties: []Property{},
       }
     }
-    action paramname  { paramName = string(data[mark:p]) }
-    action paramvalue { msg.data.properties[paramName] = string(data[mark:p]) }
+    action paramname  { paramName = data[mark:p] }
+    action paramvalue { msg.data.properties = append(msg.data.properties, Property{paramName,data[mark:p]}) }
+
+    action year    { timestamp.year   = atoi(data[mark:p]) }
+    action month   { timestamp.month  = atoi(data[mark:p]) }
+    action mday    { timestamp.day    = atoi(data[mark:p]) }
+    action hour    { timestamp.hour   = atoi(data[mark:p]) }
+    action minute  { timestamp.minute = atoi(data[mark:p]) }
+    action second  { timestamp.second = atoi(data[mark:p]) }
+    action secfrac { timestamp.nsec   = power(atoi(data[mark:p]), 9-(p-mark)) }
+
+    action timestamp {
+      t = time.Date(
+        timestamp.year,
+        time.Month(timestamp.month),
+        timestamp.day,
+        timestamp.hour,
+        timestamp.minute,
+        timestamp.second,
+        timestamp.nsec,
+        time.UTC,
+      )
+      msg.timestamp = &t
+    }
 
     nil           = "-";
     nonzero_digit = "1".."9";
     printusascii  = "!".."~";
     sp            = " ";
-    octet         = 0..255;
 
-    utf8_string = octet*;
+    utf8_string = any*;
     bom         = 0xEF 0xBB 0xBF;
     msg_utf8    = bom utf8_string;
-    msg_any     = octet*;
+    msg_any     = any*;
     msg         = msg_any | msg_utf8;
 
     sd_name         = printusascii{1,32} -- ("=" | sp | "]" | 34 | '"');
     param_value     = utf8_string >mark %paramvalue;
     param_name      = sd_name >mark %paramname;
     sd_id           = sd_name >mark %sdid;
-    sd_param        = param_name "=" '"' param_value '"';
+    sd_param        = param_name '="' param_value :>> '"';
     sd_element      = "[" sd_id ( sp sd_param )* "]";
     structured_data = nil | sd_element{,1};
 
     time_hour      = digit{,2};
     time_minute    = digit{,2};
     time_second    = digit{,2};
-    time_secfrac   = "." digit{1,6};
-    time_numoffset = ("+" | "-") time_hour ":" time_minute;
-    time_offset    = "Z" | time_numoffset;
-    partial_time   = time_hour ":" time_minute ":" time_second time_secfrac?;
+    time_secfrac   = "." (digit{1,6} >mark %secfrac);
+    #time_numoffset = ("+" | "-") time_hour ":" time_minute;
+    time_offset    = "Z"; #| time_numoffset;
+    partial_time   = (time_hour >mark %hour)
+      ":" (time_minute >mark %minute)
+      ":" (time_second >mark %second)
+      time_secfrac?;
     full_time      = partial_time time_offset;
-    date_mday      = digit{,2};
-    date_month     = digit{,2};
-    date_fullyear  = digit{,4};
+    date_mday      = digit{,2} >mark %mday;
+    date_month     = digit{,2} >mark %month;
+    date_fullyear  = digit{,4} >mark %year;
     full_date      = date_fullyear "-" date_month "-" date_mday;
-    timestamp      = nil | (full_date "T" full_time) >mark %timestamp;
+    timestamp      = nil | (full_date "T" full_time %timestamp);
 
-    msg_id   = (nil | printusascii{1,32}) >mark %msgid;
-    proc_id  = (nil | printusascii{1,128}) >mark %procid;
-    app_name = (nil | printusascii{1,48}) >mark %appname;
+    msg_id   = nil | printusascii{1,32} >mark %msgid;
+    proc_id  = nil | printusascii{1,128} >mark %procid;
+    app_name = nil | printusascii{1,48} >mark %appname;
 
-    hostname = (nil | printusascii{1,255}) >mark %hostname;
+    hostname = nil | printusascii{1,255} >mark %hostname;
     version  = (nonzero_digit digit{0,2}) >mark %version;
     prival   = digit{1,3} >mark %priority;
     pri      = "<" prival ">";
