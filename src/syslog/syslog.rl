@@ -2,7 +2,6 @@ package syslog
 
 import (
   "fmt"
-  "bytes"
   "time"
 )
 
@@ -14,7 +13,7 @@ import (
 var nilValue = []byte("-")
 
 func bytesRef(a []byte) []byte {
-  if bytes.Compare(a, nilValue) == 0 {
+  if len(a) == 1 && a[0] == '-' {
     return nil
   }
   return a
@@ -26,6 +25,17 @@ func atoi(a []byte) int {
     x = x * 10 + int(c - '0')
   }
   return x
+}
+
+func atoi2(a []byte) int {
+  return int(a[1] - '0') + int(a[0] - '0') * 10
+}
+
+func atoi4(a []byte) int {
+  return int(a[3] - '0') +
+  int(a[2] - '0') * 10 +
+  int(a[1] - '0') * 100 +
+  int(a[0] - '0') * 1000
 }
 
 func power(value, times int) int {
@@ -64,18 +74,18 @@ func Parser(data []byte) (*message, error) {
     action sdid      {
       msg.data = &structureData{
         id: data[mark:p],
-        properties: []Property{},
+        properties: make([]Property, 0, 5),
       }
     }
     action paramname  { paramName = data[mark:p] }
     action paramvalue { msg.data.properties = append(msg.data.properties, Property{paramName,data[mark:p]}) }
 
-    action year    { timestamp.year   = atoi(data[mark:p]) }
-    action month   { timestamp.month  = atoi(data[mark:p]) }
-    action mday    { timestamp.day    = atoi(data[mark:p]) }
-    action hour    { timestamp.hour   = atoi(data[mark:p]) }
-    action minute  { timestamp.minute = atoi(data[mark:p]) }
-    action second  { timestamp.second = atoi(data[mark:p]) }
+    action year    { timestamp.year   = atoi4(data[mark:p]) }
+    action month   { timestamp.month  = atoi2(data[mark:p]) }
+    action mday    { timestamp.day    = atoi2(data[mark:p]) }
+    action hour    { timestamp.hour   = atoi2(data[mark:p]) }
+    action minute  { timestamp.minute = atoi2(data[mark:p]) }
+    action second  { timestamp.second = atoi2(data[mark:p]) }
     action secfrac { timestamp.nsec   = power(atoi(data[mark:p]), 9-(p-mark)) }
 
     action timestamp {
@@ -109,11 +119,11 @@ func Parser(data []byte) (*message, error) {
     sd_id           = sd_name >mark %sdid;
     sd_param        = param_name '="' param_value :>> '"';
     sd_element      = "[" sd_id ( sp sd_param )* "]";
-    structured_data = nil | sd_element{,1};
+    structured_data = nil | sd_element{1};
 
-    time_hour      = digit{,2};
-    time_minute    = digit{,2};
-    time_second    = digit{,2};
+    time_hour      = digit{2};
+    time_minute    = digit{2};
+    time_second    = digit{2};
     time_secfrac   = "." (digit{1,6} >mark %secfrac);
     #time_numoffset = ("+" | "-") time_hour ":" time_minute;
     time_offset    = "Z"; #| time_numoffset;
@@ -122,9 +132,9 @@ func Parser(data []byte) (*message, error) {
       ":" (time_second >mark %second)
       time_secfrac?;
     full_time      = partial_time time_offset;
-    date_mday      = digit{,2} >mark %mday;
-    date_month     = digit{,2} >mark %month;
-    date_fullyear  = digit{,4} >mark %year;
+    date_mday      = digit{2} >mark %mday;
+    date_month     = digit{2} >mark %month;
+    date_fullyear  = digit{4} >mark %year;
     full_date      = date_fullyear "-" date_month "-" date_mday;
     timestamp      = nil | (full_date "T" full_time %timestamp);
 
