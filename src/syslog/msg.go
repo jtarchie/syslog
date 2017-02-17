@@ -1,6 +1,6 @@
 package syslog
 
-//go:generate ragel -G2 -e -Z syslog.rl
+//go:generate ragel -Z syslog.rl
 
 import "time"
 
