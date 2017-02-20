@@ -52,9 +52,10 @@ type timestamp struct{
 func Parser(data []byte) (*message, error) {
   var (
     paramName []byte
+    nanosecond int
     t time.Time
   )
-  msg, timestamp := &message{}, timestamp{}
+  msg := &message{}
 
   // set defaults for state machine parsing
   cs, p, pe := 0, 0, len(data)
@@ -80,23 +81,25 @@ func Parser(data []byte) (*message, error) {
     action paramname  { paramName = data[mark:p] }
     action paramvalue { msg.data.properties = append(msg.data.properties, Property{paramName,data[mark:p]}) }
 
-    action year    { timestamp.year   = atoi4(data[mark:p]) }
-    action month   { timestamp.month  = atoi2(data[mark:p]) }
-    action mday    { timestamp.day    = atoi2(data[mark:p]) }
-    action hour    { timestamp.hour   = atoi2(data[mark:p]) }
-    action minute  { timestamp.minute = atoi2(data[mark:p]) }
-    action second  { timestamp.second = atoi2(data[mark:p]) }
-    action secfrac { timestamp.nsec   = power(atoi(data[mark:p]), 9-(p-mark)) }
-
     action timestamp {
+      if data[mark+19] == '.' {
+        nbytes := (p - 2) - (mark + 19)
+        for i := mark + 20; i < p-1; i++ {
+          nanosecond = nanosecond*10 + int(data[i]-'0')
+        }
+        for i := 0; i < 9-nbytes; i++ {
+          nanosecond *= 10
+        }
+      }
+
       t = time.Date(
-        timestamp.year,
-        time.Month(timestamp.month),
-        timestamp.day,
-        timestamp.hour,
-        timestamp.minute,
-        timestamp.second,
-        timestamp.nsec,
+        atoi4(data[mark:mark+4]),
+        time.Month(atoi2(data[mark+5:mark+7])),
+        atoi2(data[mark+8:mark+10]),
+        atoi2(data[mark+11:mark+13]),
+        atoi2(data[mark+14:mark+16]),
+        atoi2(data[mark+17:mark+19]),
+        nanosecond,
         time.UTC,
       )
       msg.timestamp = &t
@@ -124,19 +127,16 @@ func Parser(data []byte) (*message, error) {
     time_hour      = digit{2};
     time_minute    = digit{2};
     time_second    = digit{2};
-    time_secfrac   = "." (digit{1,6} >mark %secfrac);
+    time_secfrac   = "." digit{1,6};
     #time_numoffset = ("+" | "-") time_hour ":" time_minute;
     time_offset    = "Z"; #| time_numoffset;
-    partial_time   = (time_hour >mark %hour)
-      ":" (time_minute >mark %minute)
-      ":" (time_second >mark %second)
-      time_secfrac?;
+    partial_time   = time_hour ":" time_minute ":" time_second time_secfrac?;
     full_time      = partial_time time_offset;
-    date_mday      = digit{2} >mark %mday;
-    date_month     = digit{2} >mark %month;
-    date_fullyear  = digit{4} >mark %year;
+    date_mday      = digit{2};
+    date_month     = digit{2};
+    date_fullyear  = digit{4};
     full_date      = date_fullyear "-" date_month "-" date_mday;
-    timestamp      = nil | (full_date "T" full_time %timestamp);
+    timestamp      = nil | (full_date "T" full_time) >mark %timestamp;
 
     msg_id   = nil | printusascii{1,32} >mark %msgid;
     proc_id  = nil | printusascii{1,128} >mark %procid;

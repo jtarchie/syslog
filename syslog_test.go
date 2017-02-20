@@ -8,7 +8,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = PDescribe("Syslog", func() {
+var _ = Describe("Syslog", func() {
 	payload := []byte(`<34>1 2003-10-11T22:14:15.003Z mymachine.example.com su 12345 98765 [exampleSDID@32473 iut="3" eventSource="Application" eventID="1011"] 'su root' failed for lonvick on /dev/pts/8`)
 
 	It("parses valid messages", func() {
@@ -54,9 +54,9 @@ var _ = PDescribe("Syslog", func() {
 					return msg.Timestamp()
 				}
 
+				Expect(timestamp("2003-10-11T22:14:15.00003Z").String()).To(Equal("2003-10-11 22:14:15.00003 +0000 UTC"))
 				Expect(timestamp("1985-04-12T23:20:50.52Z").String()).To(Equal("1985-04-12 23:20:50.52 +0000 UTC"))
 				//Expect(timestamp("1985-04-12T19:20:50.52-04:00").String()).To(Equal("1985-04-12 19:20:50.52 -0400 -0400"))
-				Expect(timestamp("2003-10-11T22:14:15.003Z").String()).To(Equal("2003-10-11 22:14:15.003 +0000 UTC"))
 				//Expect(timestamp("2003-08-24T05:14:15.000003-07:00").String()).To(Equal("2003-08-24 05:14:15.000003 -0700 -0700"))
 			})
 
