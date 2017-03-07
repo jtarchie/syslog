@@ -1,5 +1,5 @@
 
-//line syslog.rl:1
+//line parse.rl:1
 package syslog
 
 import (
@@ -8,7 +8,7 @@ import (
 )
 
 
-//line syslog.go:12
+//line parse.go:12
 const syslog_rfc5424_start int = 1
 const syslog_rfc5424_first_final int = 577
 const syslog_rfc5424_error int = 0
@@ -16,10 +16,8 @@ const syslog_rfc5424_error int = 0
 const syslog_rfc5424_en_main int = 1
 
 
-//line syslog.rl:11
+//line parse.rl:11
 
-
-var nilValue = []byte("-")
 
 func bytesRef(a []byte) []byte {
   if len(a) == 1 && a[0] == '-' {
@@ -47,39 +45,28 @@ func atoi4(a []byte) int {
   int(a[0] - '0') * 1000
 }
 
-func power(value, times int) int {
-  for i := 0; i < times; i++ {
-    value *= 10
-  }
-  return value
-}
-
-type timestamp struct{
-  year, month, day, hour, minute, second, nsec int
-}
-
-func Parser(data []byte) (*message, error) {
+func Parse(data []byte) (*Log, error) {
   var (
     paramName []byte
     nanosecond int
-    t time.Time
   )
-  msg := &message{}
+
+  log := &Log{}
 
   // set defaults for state machine parsing
-  cs, p, pe := 0, 0, len(data)
+  cs, p, pe, eof := 0, 0, len(data), len(data)
 
   // use to keep track start of value
   mark := 0
 
   // taken directly from https://tools.ietf.org/html/rfc5424#page-8
   
-//line syslog.go:78
+//line parse.go:65
 	{
 	cs = syslog_rfc5424_start
 	}
 
-//line syslog.go:83
+//line parse.go:70
 	{
 	if p == pe {
 		goto _test_eof
@@ -127,6 +114,8 @@ func Parser(data []byte) (*message, error) {
 		goto st_case_577
 	case 578:
 		goto st_case_578
+	case 579:
+		goto st_case_579
 	case 19:
 		goto st_case_19
 	case 20:
@@ -1264,7 +1253,7 @@ st_case_0:
 		}
 		goto st0
 tr2:
-//line syslog.rl:68
+//line parse.rl:55
  mark = p 
 	goto st3
 	st3:
@@ -1272,7 +1261,7 @@ tr2:
 			goto _test_eof3
 		}
 	st_case_3:
-//line syslog.go:1276
+//line parse.go:1265
 		if data[p] == 62 {
 			goto tr4
 		}
@@ -1302,21 +1291,21 @@ tr2:
 		}
 		goto st0
 tr4:
-//line syslog.rl:70
- msg.priority = atoi(data[mark:p]) 
+//line parse.rl:57
+ log.priority = atoi(data[mark:p]) 
 	goto st6
 	st6:
 		if p++; p == pe {
 			goto _test_eof6
 		}
 	st_case_6:
-//line syslog.go:1314
+//line parse.go:1303
 		if 49 <= data[p] && data[p] <= 57 {
 			goto tr6
 		}
 		goto st0
 tr6:
-//line syslog.rl:68
+//line parse.rl:55
  mark = p 
 	goto st7
 	st7:
@@ -1324,7 +1313,7 @@ tr6:
 			goto _test_eof7
 		}
 	st_case_7:
-//line syslog.go:1328
+//line parse.go:1317
 		if data[p] == 32 {
 			goto tr7
 		}
@@ -1333,15 +1322,15 @@ tr6:
 		}
 		goto st0
 tr7:
-//line syslog.rl:69
- msg.version = atoi(data[mark:p]) 
+//line parse.rl:56
+ log.version = atoi(data[mark:p]) 
 	goto st8
 	st8:
 		if p++; p == pe {
 			goto _test_eof8
 		}
 	st_case_8:
-//line syslog.go:1345
+//line parse.go:1334
 		if data[p] == 45 {
 			goto st9
 		}
@@ -1359,7 +1348,7 @@ tr7:
 		}
 		goto st0
 tr580:
-//line syslog.rl:84
+//line parse.rl:71
 
       if data[mark+19] == '.' {
         nbytes := (p - 2) - (mark + 19)
@@ -1371,7 +1360,7 @@ tr580:
         }
       }
 
-      t = time.Date(
+      log.timestamp = time.Date(
         atoi4(data[mark:mark+4]),
         time.Month(atoi2(data[mark+5:mark+7])),
         atoi2(data[mark+8:mark+10]),
@@ -1381,7 +1370,6 @@ tr580:
         nanosecond,
         time.UTC,
       )
-      msg.timestamp = &t
     
 	goto st10
 	st10:
@@ -1389,13 +1377,13 @@ tr580:
 			goto _test_eof10
 		}
 	st_case_10:
-//line syslog.go:1393
+//line parse.go:1381
 		if 33 <= data[p] && data[p] <= 126 {
 			goto tr12
 		}
 		goto st0
 tr12:
-//line syslog.rl:68
+//line parse.rl:55
  mark = p 
 	goto st11
 	st11:
@@ -1403,7 +1391,7 @@ tr12:
 			goto _test_eof11
 		}
 	st_case_11:
-//line syslog.go:1407
+//line parse.go:1395
 		if data[p] == 32 {
 			goto tr13
 		}
@@ -1412,21 +1400,21 @@ tr12:
 		}
 		goto st0
 tr13:
-//line syslog.rl:71
- msg.hostname = bytesRef(data[mark:p]) 
+//line parse.rl:58
+ log.hostname = bytesRef(data[mark:p]) 
 	goto st12
 	st12:
 		if p++; p == pe {
 			goto _test_eof12
 		}
 	st_case_12:
-//line syslog.go:1424
+//line parse.go:1412
 		if 33 <= data[p] && data[p] <= 126 {
 			goto tr15
 		}
 		goto st0
 tr15:
-//line syslog.rl:68
+//line parse.rl:55
  mark = p 
 	goto st13
 	st13:
@@ -1434,7 +1422,7 @@ tr15:
 			goto _test_eof13
 		}
 	st_case_13:
-//line syslog.go:1438
+//line parse.go:1426
 		if data[p] == 32 {
 			goto tr16
 		}
@@ -1443,21 +1431,21 @@ tr15:
 		}
 		goto st0
 tr16:
-//line syslog.rl:72
- msg.appname = bytesRef(data[mark:p]) 
+//line parse.rl:59
+ log.appname = bytesRef(data[mark:p]) 
 	goto st14
 	st14:
 		if p++; p == pe {
 			goto _test_eof14
 		}
 	st_case_14:
-//line syslog.go:1455
+//line parse.go:1443
 		if 33 <= data[p] && data[p] <= 126 {
 			goto tr18
 		}
 		goto st0
 tr18:
-//line syslog.rl:68
+//line parse.rl:55
  mark = p 
 	goto st15
 	st15:
@@ -1465,7 +1453,7 @@ tr18:
 			goto _test_eof15
 		}
 	st_case_15:
-//line syslog.go:1469
+//line parse.go:1457
 		if data[p] == 32 {
 			goto tr19
 		}
@@ -1474,21 +1462,21 @@ tr18:
 		}
 		goto st0
 tr19:
-//line syslog.rl:73
- msg.procID = bytesRef(data[mark:p]) 
+//line parse.rl:60
+ log.procID = bytesRef(data[mark:p]) 
 	goto st16
 	st16:
 		if p++; p == pe {
 			goto _test_eof16
 		}
 	st_case_16:
-//line syslog.go:1486
+//line parse.go:1474
 		if 33 <= data[p] && data[p] <= 126 {
 			goto tr21
 		}
 		goto st0
 tr21:
-//line syslog.rl:68
+//line parse.rl:55
  mark = p 
 	goto st17
 	st17:
@@ -1496,7 +1484,7 @@ tr21:
 			goto _test_eof17
 		}
 	st_case_17:
-//line syslog.go:1500
+//line parse.go:1488
 		if data[p] == 32 {
 			goto tr22
 		}
@@ -1505,15 +1493,15 @@ tr21:
 		}
 		goto st0
 tr22:
-//line syslog.rl:74
- msg.msgID = bytesRef(data[mark:p]) 
+//line parse.rl:61
+ log.msgID = bytesRef(data[mark:p]) 
 	goto st18
 	st18:
 		if p++; p == pe {
 			goto _test_eof18
 		}
 	st_case_18:
-//line syslog.go:1517
+//line parse.go:1505
 		switch data[p] {
 		case 45:
 			goto st577
@@ -1522,9 +1510,9 @@ tr22:
 		}
 		goto st0
 tr29:
-//line syslog.rl:75
+//line parse.rl:62
 
-      msg.data = &structureData{
+      log.data = &structureData{
         id: data[mark:p],
         properties: make([]Property, 0, 5),
       }
@@ -1535,7 +1523,7 @@ tr29:
 			goto _test_eof577
 		}
 	st_case_577:
-//line syslog.go:1539
+//line parse.go:1527
 		if data[p] == 32 {
 			goto st578
 		}
@@ -1545,7 +1533,18 @@ tr29:
 			goto _test_eof578
 		}
 	st_case_578:
-		goto st578
+		goto tr583
+tr583:
+//line parse.rl:55
+ mark = p 
+	goto st579
+	st579:
+		if p++; p == pe {
+			goto _test_eof579
+		}
+	st_case_579:
+//line parse.go:1547
+		goto st579
 	st19:
 		if p++; p == pe {
 			goto _test_eof19
@@ -1568,7 +1567,7 @@ tr29:
 		}
 		goto st0
 tr26:
-//line syslog.rl:68
+//line parse.rl:55
  mark = p 
 	goto st20
 	st20:
@@ -1576,7 +1575,7 @@ tr26:
 			goto _test_eof20
 		}
 	st_case_20:
-//line syslog.go:1580
+//line parse.go:1579
 		switch data[p] {
 		case 32:
 			goto tr27
@@ -1595,9 +1594,9 @@ tr26:
 		}
 		goto st0
 tr27:
-//line syslog.rl:75
+//line parse.rl:62
 
-      msg.data = &structureData{
+      log.data = &structureData{
         id: data[mark:p],
         properties: make([]Property, 0, 5),
       }
@@ -1608,7 +1607,7 @@ tr27:
 			goto _test_eof21
 		}
 	st_case_21:
-//line syslog.go:1612
+//line parse.go:1611
 		if data[p] == 33 {
 			goto tr30
 		}
@@ -1626,7 +1625,7 @@ tr27:
 		}
 		goto st0
 tr30:
-//line syslog.rl:68
+//line parse.rl:55
  mark = p 
 	goto st22
 	st22:
@@ -1634,7 +1633,7 @@ tr30:
 			goto _test_eof22
 		}
 	st_case_22:
-//line syslog.go:1638
+//line parse.go:1637
 		switch data[p] {
 		case 33:
 			goto st23
@@ -2260,7 +2259,7 @@ tr30:
 		}
 		goto st0
 tr32:
-//line syslog.rl:81
+//line parse.rl:68
  paramName = data[mark:p] 
 	goto st54
 	st54:
@@ -2268,7 +2267,7 @@ tr32:
 			goto _test_eof54
 		}
 	st_case_54:
-//line syslog.go:2272
+//line parse.go:2271
 		if data[p] == 34 {
 			goto st55
 		}
@@ -2283,7 +2282,7 @@ tr32:
 		}
 		goto tr64
 tr64:
-//line syslog.rl:68
+//line parse.rl:55
  mark = p 
 	goto st56
 	st56:
@@ -2291,27 +2290,27 @@ tr64:
 			goto _test_eof56
 		}
 	st_case_56:
-//line syslog.go:2295
+//line parse.go:2294
 		if data[p] == 34 {
 			goto tr67
 		}
 		goto st56
 tr65:
-//line syslog.rl:68
+//line parse.rl:55
  mark = p 
-//line syslog.rl:82
- msg.data.properties = append(msg.data.properties, Property{paramName,data[mark:p]}) 
+//line parse.rl:69
+ log.data.properties = append(log.data.properties, Property{paramName,data[mark:p]}) 
 	goto st57
 tr67:
-//line syslog.rl:82
- msg.data.properties = append(msg.data.properties, Property{paramName,data[mark:p]}) 
+//line parse.rl:69
+ log.data.properties = append(log.data.properties, Property{paramName,data[mark:p]}) 
 	goto st57
 	st57:
 		if p++; p == pe {
 			goto _test_eof57
 		}
 	st_case_57:
-//line syslog.go:2315
+//line parse.go:2314
 		switch data[p] {
 		case 32:
 			goto st21
@@ -8488,7 +8487,7 @@ tr67:
 		}
 		goto st0
 tr10:
-//line syslog.rl:68
+//line parse.rl:55
  mark = p 
 	goto st548
 	st548:
@@ -8496,7 +8495,7 @@ tr10:
 			goto _test_eof548
 		}
 	st_case_548:
-//line syslog.go:8500
+//line parse.go:8499
 		if 48 <= data[p] && data[p] <= 57 {
 			goto st549
 		}
@@ -8794,6 +8793,7 @@ tr10:
 	_test_eof18: cs = 18; goto _test_eof
 	_test_eof577: cs = 577; goto _test_eof
 	_test_eof578: cs = 578; goto _test_eof
+	_test_eof579: cs = 579; goto _test_eof
 	_test_eof19: cs = 19; goto _test_eof
 	_test_eof20: cs = 20; goto _test_eof
 	_test_eof21: cs = 21; goto _test_eof
@@ -9354,15 +9354,29 @@ tr10:
 	_test_eof576: cs = 576; goto _test_eof
 
 	_test_eof: {}
+	if p == eof {
+		switch cs {
+		case 579:
+//line parse.rl:93
+ log.message = data[mark:p] 
+		case 578:
+//line parse.rl:55
+ mark = p 
+//line parse.rl:93
+ log.message = data[mark:p] 
+//line parse.go:9368
+		}
+	}
+
 	_out: {}
 	}
 
-//line syslog.rl:157
+//line parse.rl:98
 
 
   if cs < syslog_rfc5424_first_final {
     return nil, fmt.Errorf("error in msg at pos %d: %s", p, data)
   }
 
-  return msg, nil
+  return log, nil
 }

@@ -1,6 +1,6 @@
 package syslog
 
-//go:generate ragel -e -G2 -Z syslog.rl
+//go:generate ragel -e -G2 -Z parse.rl
 
 import "time"
 
@@ -22,53 +22,58 @@ func (s *structureData) Properties() []Property {
 	return s.properties
 }
 
-type message struct {
+type Log struct {
 	version   int
 	priority  int
-	timestamp *time.Time
+	timestamp time.Time
 	hostname  []byte
 	appname   []byte
 	procID    []byte
 	msgID     []byte
 	data      *structureData
+	message   []byte
 }
 
-func (m *message) Version() int {
+func (m *Log) Version() int {
 	return m.version
 }
 
-func (m *message) Severity() int {
+func (m *Log) Severity() int {
 	return m.priority & 7
 }
 
-func (m *message) Facility() int {
+func (m *Log) Facility() int {
 	return m.priority >> 3
 }
 
-func (m *message) Priority() int {
+func (m *Log) Priority() int {
 	return m.priority
 }
 
-func (m *message) Timestamp() *time.Time {
+func (m *Log) Timestamp() time.Time {
 	return m.timestamp
 }
 
-func (m *message) Hostname() []byte {
+func (m *Log) Hostname() []byte {
 	return m.hostname
 }
 
-func (m *message) Appname() []byte {
+func (m *Log) Appname() []byte {
 	return m.appname
 }
 
-func (m *message) ProcID() []byte {
+func (m *Log) ProcID() []byte {
 	return m.procID
 }
 
-func (m *message) MsgID() []byte {
+func (m *Log) MsgID() []byte {
 	return m.msgID
 }
 
-func (m *message) StructureData() *structureData {
+func (m *Log) StructureData() *structureData {
 	return m.data
+}
+
+func (m *Log) Message() []byte {
+	return m.message
 }
