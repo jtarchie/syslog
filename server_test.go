@@ -31,6 +31,7 @@ var _ = Describe("Server", func() {
 		Eventually(func() int {
 			return len(writer.Logs)
 		}).Should(Equal(1))
+		Expect(writer.Logs[0].Message()).To(BeEquivalentTo(`'su root' failed for lonvick on /dev/pts/8`))
 	})
 })
 

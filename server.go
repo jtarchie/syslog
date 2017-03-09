@@ -30,13 +30,13 @@ func (s *Server) Start() error {
 
 	buffer := make([]byte, 1024)
 	for {
-		_, _, err := s.listener.ReadFrom(buffer)
+		n, _, err := s.listener.ReadFrom(buffer)
 		if err != nil {
 			log.Printf("could not read from UDP: %s", err)
 			continue
 		}
 
-		parsed, err := Parse(buffer)
+		parsed, err := Parse(buffer[:n])
 		if err != nil {
 			log.Printf("could not parse msg: %s", err)
 			continue
