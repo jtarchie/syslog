@@ -24,7 +24,6 @@ var _ = Describe("Server", func() {
 		writer := &SpyWriter{}
 		server := syslog.NewServer(writer)
 		go server.Start()
-		defer server.Close()
 
 		SendMessage(server)
 

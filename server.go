@@ -46,13 +46,6 @@ func (s *Server) Start() error {
 	return nil
 }
 
-func (s *Server) Close() error {
-	return nil
-}
-
 func (s *Server) Addr() net.Addr {
 	return s.listener.LocalAddr()
-}
-
-func (s *Server) handle(conn net.Conn) {
 }

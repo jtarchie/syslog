@@ -14,13 +14,18 @@ func BenchmarkSendMessage(b *testing.B) {
 	writer := &SpyWriter{}
 	server := syslog.NewServer(writer)
 	go server.Start()
-	defer server.Close()
+
 	conn, _ := net.Dial("udp", server.Addr().String())
 	defer conn.Close()
 
+	conn1, _ := net.Dial("udp", server.Addr().String())
+	defer conn1.Close()
+
 	b.ReportAllocs()
+
 	for i := 0; i < b.N; i++ {
 		conn.Write(payload)
+		conn1.Write(payload)
 	}
 }
 
