@@ -12,7 +12,7 @@ var err error
 
 func BenchmarkSendMessage(b *testing.B) {
 	writer := &SpyWriter{}
-	server := syslog.NewServer(writer)
+	server, _ := syslog.NewUDPServer(0, writer)
 	go server.Start()
 
 	conn, _ := net.Dial("udp", server.Addr().String())

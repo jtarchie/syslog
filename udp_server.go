@@ -1,6 +1,7 @@
 package syslog
 
 import (
+	"fmt"
 	"log"
 	"net"
 )
@@ -9,23 +10,23 @@ type Writer interface {
 	Write(*Log) error
 }
 
-type Server struct {
+type UDPServer struct {
 	writer   Writer
 	listener net.PacketConn
 }
 
-func NewServer(w Writer) *Server {
-	listener, err := net.ListenPacket("udp", ":0")
+func NewUDPServer(port int, w Writer) (*UDPServer, error) {
+	listener, err := net.ListenPacket("udp", fmt.Sprintf(":%d", port))
 	if err != nil {
-		log.Fatalf("could not start server: %s", err)
+		return nil, fmt.Errorf("could not start server: %s", err)
 	}
-	return &Server{
+	return &UDPServer{
 		writer:   w,
 		listener: listener,
-	}
+	}, nil
 }
 
-func (s *Server) Start() error {
+func (s *UDPServer) Start() error {
 	defer s.listener.Close()
 
 	buffer := make([]byte, 1024)
@@ -46,6 +47,6 @@ func (s *Server) Start() error {
 	return nil
 }
 
-func (s *Server) Addr() net.Addr {
+func (s *UDPServer) Addr() net.Addr {
 	return s.listener.LocalAddr()
 }
