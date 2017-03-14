@@ -27,6 +27,7 @@ func NewUDPServer(port int, w Writer) (*UDPServer, error) {
 }
 
 func (s *UDPServer) Start() error {
+	log.Printf("udp: starting server on addr %s", s.listener.LocalAddr().String())
 	defer s.listener.Close()
 
 	buffer := make([]byte, 1024)
