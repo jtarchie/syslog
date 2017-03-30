@@ -1,4 +1,4 @@
-package web
+package writers
 
 import (
 	"fmt"
@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/blevesearch/bleve"
-	"github.com/jtarchie/syslog"
+	"github.com/jtarchie/syslog/pkg/log"
 )
 
 type Server struct {

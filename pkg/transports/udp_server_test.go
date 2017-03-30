@@ -1,15 +1,18 @@
-package syslog_test
+package transports_test
 
 import (
+	"log"
 	"net"
 	"sync"
+	"testing"
 
-	"github.com/jtarchie/syslog"
+	"github.com/jtarchie/syslog/pkg/log"
+	"github.com/jtarchie/syslog/pkg/transports"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
 
-func SendMessage(s *syslog.UDPServer) {
+func SendMessage(s *transports.UDPServer) {
 	payload := []byte(`<34>1 2003-10-11T22:14:15.003Z mymachine.example.com su 12345 98765 [exampleSDID@32473 iut="3" eventSource="Application" eventID="1011"] 'su root' failed for lonvick on /dev/pts/8`)
 
 	conn, err := net.Dial("udp", s.Addr().String())
@@ -23,7 +26,7 @@ func SendMessage(s *syslog.UDPServer) {
 var _ = Describe("Server", func() {
 	It("accepts datagrams via UDP", func() {
 		writer := &SpyWriter{}
-		server, err := syslog.NewUDPServer(0, writer)
+		server, err := transports.NewUDPServer(0, writer)
 		Expect(err).ToNot(HaveOccurred())
 		go server.Start()
 
@@ -55,4 +58,10 @@ func (s *SpyWriter) Logs() []*syslog.Log {
 	defer s.mu.Unlock()
 
 	return s.logs
+}
+
+func TestTransports(t *testing.T) {
+	log.SetOutput(GinkgoWriter)
+	RegisterFailHandler(Fail)
+	RunSpecs(t, "Transports Suite")
 }

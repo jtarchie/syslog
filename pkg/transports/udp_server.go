@@ -1,13 +1,15 @@
-package syslog
+package transports
 
 import (
 	"fmt"
 	"log"
 	"net"
+
+	"github.com/jtarchie/syslog/pkg/log"
 )
 
 type Writer interface {
-	Write(*Log) error
+	Write(*syslog.Log) error
 }
 
 type UDPServer struct {
@@ -38,7 +40,7 @@ func (s *UDPServer) Start() error {
 			continue
 		}
 
-		parsed, err := Parse(buffer[:n])
+		parsed, err := syslog.Parse(buffer[:n])
 		if err != nil {
 			log.Printf("could not parse msg: %s", err)
 			continue

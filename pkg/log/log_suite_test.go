@@ -9,8 +9,8 @@ import (
 	"testing"
 )
 
-func TestLearningRagel(t *testing.T) {
+func TestLog(t *testing.T) {
 	log.SetOutput(GinkgoWriter)
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Syslog Parser Suite")
+	RunSpecs(t, "Log Suite")
 }

@@ -3,7 +3,7 @@ package syslog_test
 import (
 	"time"
 
-	"github.com/jtarchie/syslog"
+	"github.com/jtarchie/syslog/pkg/log"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
