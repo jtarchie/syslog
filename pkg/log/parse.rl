@@ -70,8 +70,16 @@ func Parse(data []byte) (*Log, error) {
 
     action timestamp {
       if data[mark+19] == '.' {
-        nbytes := (p - 2) - (mark + 19)
-        for i := mark + 20; i < p-1; i++ {
+        var nbytes int
+        var offset int
+        if data[p-1] == 'Z' {
+          nbytes = (p - 2) - (mark + 19)
+          offset = 1
+        } else {
+          nbytes = (p - 7) - (mark + 19)
+          offset = 6
+        }
+        for i := mark + 20; i < p-offset; i++ {
           nanosecond = nanosecond*10 + int(data[i]-'0')
         }
         for i := 0; i < 9-nbytes; i++ {

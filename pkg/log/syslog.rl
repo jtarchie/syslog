@@ -24,8 +24,8 @@
   time_minute    = digit{2};
   time_second    = digit{2};
   time_secfrac   = "." digit{1,6};
-  #time_numoffset = ("+" | "-") time_hour ":" time_minute;
-  time_offset    = "Z"; #| time_numoffset;
+  time_numoffset = ("+" | "-") time_hour ":" time_minute;
+  time_offset    = "Z" | time_numoffset;
   partial_time   = time_hour ":" time_minute ":" time_second time_secfrac?;
   full_time      = partial_time time_offset;
   date_mday      = digit{2};
