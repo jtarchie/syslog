@@ -65,6 +65,8 @@ var _ = Describe("Log Parse", func() {
 				Expect(timestamp("2003-10-11T22:14:15.00003Z").String()).To(Equal("2003-10-11 22:14:15.00003 +0000 UTC"))
 				Expect(timestamp("1985-04-12T23:20:50.52Z").String()).To(Equal("1985-04-12 23:20:50.52 +0000 UTC"))
 				Expect(timestamp("1985-04-12T23:20:50.52+00:00").String()).To(Equal("1985-04-12 23:20:50.52 +0000 UTC"))
+				Expect(timestamp("1985-04-12T23:20:50.52+02:00").String()).To(Equal("1985-04-12 21:20:50.52 +0000 UTC"))
+				Expect(timestamp("1985-04-12T18:20:50.52-02:00").String()).To(Equal("1985-04-12 20:20:50.52 +0000 UTC"))
 			})
 
 			It("fails parsing on unsupported formats", func() {

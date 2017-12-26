@@ -69,16 +69,23 @@ func Parse(data []byte) (*Log, error) {
     action paramvalue { log.data.properties = append(log.data.properties, Property{paramName,data[mark:p]}) }
 
     action timestamp {
+      location := time.UTC
       if data[mark+19] == '.' {
-        var nbytes int
-        var offset int
-        if data[p-1] == 'Z' {
-          nbytes = (p - 2) - (mark + 19)
-          offset = 1
-        } else {
-          nbytes = (p - 7) - (mark + 19)
+        offset := 1
+
+        if data[p-1] != 'Z' {
           offset = 6
+          dir := 1
+          if data[p-6] == '-' {
+            dir = -1
+          }
+
+          location = time.FixedZone(
+            "",
+            dir * (atoi2(data[p-5:p-3]) * 3600 + atoi(data[p-2:p]) * 60),
+          )
         }
+        nbytes := ( p - offset - 1 ) - ( mark + 19 )
         for i := mark + 20; i < p-offset; i++ {
           nanosecond = nanosecond*10 + int(data[i]-'0')
         }
@@ -95,8 +102,8 @@ func Parse(data []byte) (*Log, error) {
         atoi2(data[mark+14:mark+16]),
         atoi2(data[mark+17:mark+19]),
         nanosecond,
-        time.UTC,
-      )
+        location,
+      ).UTC()
     }
     action message { log.message = data[mark:p] }
 

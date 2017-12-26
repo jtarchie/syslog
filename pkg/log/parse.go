@@ -1210,16 +1210,23 @@ _match:
 		case 10:
 //line parse.rl:71
 
+      location := time.UTC
       if data[mark+19] == '.' {
-        var nbytes int
-        var offset int
-        if data[p-1] == 'Z' {
-          nbytes = (p - 2) - (mark + 19)
-          offset = 1
-        } else {
-          nbytes = (p - 7) - (mark + 19)
+        offset := 1
+
+        if data[p-1] != 'Z' {
           offset = 6
+          dir := 1
+          if data[p-6] == '-' {
+            dir = -1
+          }
+
+          location = time.FixedZone(
+            "",
+            dir * (atoi2(data[p-5:p-3]) * 3600 + atoi(data[p-2:p]) * 60),
+          )
         }
+        nbytes := ( p - offset - 1 ) - ( mark + 19 )
         for i := mark + 20; i < p-offset; i++ {
           nanosecond = nanosecond*10 + int(data[i]-'0')
         }
@@ -1236,10 +1243,10 @@ _match:
         atoi2(data[mark+14:mark+16]),
         atoi2(data[mark+17:mark+19]),
         nanosecond,
-        time.UTC,
-      )
+        location,
+      ).UTC()
     
-//line parse.go:1243
+//line parse.go:1250
 		}
 	}
 
@@ -1262,9 +1269,9 @@ _again:
 //line parse.rl:55
  mark = p 
 			case 11:
-//line parse.rl:101
+//line parse.rl:108
  log.message = data[mark:p] 
-//line parse.go:1268
+//line parse.go:1275
 			}
 		}
 	}
@@ -1272,7 +1279,7 @@ _again:
 	_out: {}
 	}
 
-//line parse.rl:106
+//line parse.rl:113
 
 
   if cs < syslog_rfc5424_first_final {
