@@ -43,6 +43,7 @@ func Parse(data []byte) (*Log, error) {
   )
 
   log := &Log{}
+  var location *time.Location
 
   // set defaults for state machine parsing
   cs, p, pe, eof := 0, 0, len(data), len(data)
@@ -69,7 +70,7 @@ func Parse(data []byte) (*Log, error) {
     action paramvalue { log.data.properties = append(log.data.properties, Property{paramName,data[mark:p]}) }
 
     action timestamp {
-      location := time.UTC
+      location = time.UTC
       if data[mark+19] == '.' {
         offset := 1
 
