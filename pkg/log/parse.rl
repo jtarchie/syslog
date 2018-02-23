@@ -10,11 +10,11 @@ import (
   write data;
 }%%
 
-func bytesRef(a []byte) []byte {
+func toString(a []byte) string {
   if len(a) == 1 && a[0] == '-' {
-    return nil
+    return ""
   }
-  return a
+  return string(a)
 }
 
 func atoi(a []byte) int {
@@ -38,7 +38,7 @@ func atoi4(a []byte) int {
 
 func Parse(data []byte) (*Log, error) {
   var (
-    paramName []byte
+    paramName string
     nanosecond int
   )
 
@@ -56,18 +56,18 @@ func Parse(data []byte) (*Log, error) {
     action mark      { mark = p }
     action version   { log.version = atoi(data[mark:p]) }
     action priority  { log.priority = atoi(data[mark:p]) }
-    action hostname  { log.hostname = bytesRef(data[mark:p]) }
-    action appname   { log.appname = bytesRef(data[mark:p]) }
-    action procid    { log.procID = bytesRef(data[mark:p]) }
-    action msgid     { log.msgID = bytesRef(data[mark:p]) }
+    action hostname  { log.hostname = toString(data[mark:p]) }
+    action appname   { log.appname = toString(data[mark:p]) }
+    action procid    { log.procID = toString(data[mark:p]) }
+    action msgid     { log.msgID = toString(data[mark:p]) }
     action sdid      {
-      log.data = &structureData{
-        id: data[mark:p],
+      log.data = structureData{
+        id: string(data[mark:p]),
         properties: make([]Property, 0, 5),
       }
     }
-    action paramname  { paramName = data[mark:p] }
-    action paramvalue { log.data.properties = append(log.data.properties, Property{paramName,data[mark:p]}) }
+    action paramname  { paramName = string(data[mark:p]) }
+    action paramvalue { log.data.properties = append(log.data.properties, Property{paramName,string(data[mark:p])}) }
 
     action timestamp {
       location = time.UTC
@@ -106,7 +106,7 @@ func Parse(data []byte) (*Log, error) {
         location,
       ).UTC()
     }
-    action message { log.message = data[mark:p] }
+    action message { log.message = string(data[mark:p]) }
 
     include syslog_rfc5424 "syslog.rl";
     write init;

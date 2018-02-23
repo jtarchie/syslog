@@ -6,20 +6,20 @@ package syslog
 import "time"
 
 type Property struct {
-	Key   []byte
-	Value []byte
+	Key   string
+	Value string
 }
 
 type structureData struct {
-	id         []byte
+	id         string
 	properties []Property
 }
 
-func (s *structureData) ID() []byte {
+func (s structureData) ID() string {
 	return s.id
 }
 
-func (s *structureData) Properties() []Property {
+func (s structureData) Properties() []Property {
 	return s.properties
 }
 
@@ -27,12 +27,12 @@ type Log struct {
 	version   int
 	priority  int
 	timestamp time.Time
-	hostname  []byte
-	appname   []byte
-	procID    []byte
-	msgID     []byte
-	data      *structureData
-	message   []byte
+	hostname  string
+	appname   string
+	procID    string
+	msgID     string
+	data      structureData
+	message   string
 }
 
 func (m *Log) Version() int {
@@ -55,26 +55,26 @@ func (m *Log) Timestamp() time.Time {
 	return m.timestamp
 }
 
-func (m *Log) Hostname() []byte {
+func (m *Log) Hostname() string {
 	return m.hostname
 }
 
-func (m *Log) Appname() []byte {
+func (m *Log) Appname() string {
 	return m.appname
 }
 
-func (m *Log) ProcID() []byte {
+func (m *Log) ProcID() string {
 	return m.procID
 }
 
-func (m *Log) MsgID() []byte {
+func (m *Log) MsgID() string {
 	return m.msgID
 }
 
-func (m *Log) StructureData() *structureData {
+func (m *Log) StructureData() structureData {
 	return m.data
 }
 
-func (m *Log) Message() []byte {
+func (m *Log) Message() string {
 	return m.message
 }

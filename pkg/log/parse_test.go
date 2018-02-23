@@ -92,7 +92,7 @@ var _ = Describe("Log Parse", func() {
 		It("is nil when '-'", func() {
 			payload := []byte("<34>1 2003-10-11T22:14:15.003Z - su - - - 'su root' failed for lonvick on /dev/pts/8")
 			log, _ := syslog.Parse(payload)
-			Expect(log.Hostname()).To(BeNil())
+			Expect(log.Hostname()).To(BeEmpty())
 		})
 	})
 
@@ -105,7 +105,7 @@ var _ = Describe("Log Parse", func() {
 		It("is nil when '-'", func() {
 			payload := []byte("<34>1 2003-10-11T22:14:15.003Z - - - - - 'su root' failed for lonvick on /dev/pts/8")
 			log, _ := syslog.Parse(payload)
-			Expect(log.Appname()).To(BeNil())
+			Expect(log.Appname()).To(BeEmpty())
 		})
 	})
 
@@ -118,7 +118,7 @@ var _ = Describe("Log Parse", func() {
 		It("is nil when '-'", func() {
 			payload := []byte("<34>1 2003-10-11T22:14:15.003Z - - - - - 'su root' failed for lonvick on /dev/pts/8")
 			log, _ := syslog.Parse(payload)
-			Expect(log.ProcID()).To(BeNil())
+			Expect(log.ProcID()).To(BeEmpty())
 		})
 	})
 
@@ -131,26 +131,27 @@ var _ = Describe("Log Parse", func() {
 		It("is nil when '-'", func() {
 			payload := []byte("<34>1 2003-10-11T22:14:15.003Z - - - - - 'su root' failed for lonvick on /dev/pts/8")
 			log, _ := syslog.Parse(payload)
-			Expect(log.MsgID()).To(BeNil())
+			Expect(log.MsgID()).To(BeEmpty())
 		})
 	})
 
 	Context("with structure data", func() {
 		It("sets structure data", func() {
 			log, _ := syslog.Parse(payload)
-			data := *log.StructureData()
+			data := log.StructureData()
 			Expect(data.ID()).To(BeEquivalentTo("exampleSDID@32473"))
 			Expect(data.Properties()).To(BeEquivalentTo([]syslog.Property{
-				{[]byte("iut"), []byte("3")},
-				{[]byte("eventSource"), []byte("Application")},
-				{[]byte("eventID"), []byte("1011")},
+				{"iut", "3"},
+				{"eventSource", "Application"},
+				{"eventID", "1011"},
 			}))
 		})
 
 		It("is nil when '-'", func() {
 			payload := []byte("<34>1 2003-10-11T22:14:15.003Z - - - - - 'su root' failed for lonvick on /dev/pts/8")
 			log, _ := syslog.Parse(payload)
-			Expect(log.StructureData()).To(BeNil())
+			Expect(log.StructureData().ID()).To(BeEmpty())
+			Expect(log.StructureData().Properties()).To(BeNil())
 		})
 	})
 
@@ -163,7 +164,7 @@ var _ = Describe("Log Parse", func() {
 		It("sets nil for no message", func() {
 			payload := []byte("<34>1 2003-10-11T22:14:15.003Z - - - - -")
 			log, _ := syslog.Parse(payload)
-			Expect(log.Message()).To(BeNil())
+			Expect(log.Message()).To(BeEmpty())
 		})
 	})
 })

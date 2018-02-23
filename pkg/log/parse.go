@@ -1046,11 +1046,11 @@ const syslog_rfc5424_en_main int = 1
 //line parse.rl:11
 
 
-func bytesRef(a []byte) []byte {
+func toString(a []byte) string {
   if len(a) == 1 && a[0] == '-' {
-    return nil
+    return ""
   }
-  return a
+  return string(a)
 }
 
 func atoi(a []byte) int {
@@ -1074,11 +1074,12 @@ func atoi4(a []byte) int {
 
 func Parse(data []byte) (*Log, error) {
   var (
-    paramName []byte
+    paramName string
     nanosecond int
   )
 
   log := &Log{}
+  var location *time.Location
 
   // set defaults for state machine parsing
   cs, p, pe, eof := 0, 0, len(data), len(data)
@@ -1088,12 +1089,12 @@ func Parse(data []byte) (*Log, error) {
 
   // taken directly from https://tools.ietf.org/html/rfc5424#page-8
   
-//line parse.go:1092
+//line parse.go:1093
 	{
 	cs = syslog_rfc5424_start
 	}
 
-//line parse.go:1097
+//line parse.go:1098
 	{
 	var _klen int
 	var _trans int
@@ -1173,44 +1174,44 @@ _match:
 		_acts++
 		switch _syslog_rfc5424_actions[_acts-1] {
 		case 0:
-//line parse.rl:55
+//line parse.rl:56
  mark = p 
 		case 1:
-//line parse.rl:56
+//line parse.rl:57
  log.version = atoi(data[mark:p]) 
 		case 2:
-//line parse.rl:57
+//line parse.rl:58
  log.priority = atoi(data[mark:p]) 
 		case 3:
-//line parse.rl:58
- log.hostname = bytesRef(data[mark:p]) 
-		case 4:
 //line parse.rl:59
- log.appname = bytesRef(data[mark:p]) 
-		case 5:
+ log.hostname = toString(data[mark:p]) 
+		case 4:
 //line parse.rl:60
- log.procID = bytesRef(data[mark:p]) 
-		case 6:
+ log.appname = toString(data[mark:p]) 
+		case 5:
 //line parse.rl:61
- log.msgID = bytesRef(data[mark:p]) 
-		case 7:
+ log.procID = toString(data[mark:p]) 
+		case 6:
 //line parse.rl:62
+ log.msgID = toString(data[mark:p]) 
+		case 7:
+//line parse.rl:63
 
-      log.data = &structureData{
-        id: data[mark:p],
+      log.data = structureData{
+        id: string(data[mark:p]),
         properties: make([]Property, 0, 5),
       }
     
 		case 8:
-//line parse.rl:68
- paramName = data[mark:p] 
-		case 9:
 //line parse.rl:69
- log.data.properties = append(log.data.properties, Property{paramName,data[mark:p]}) 
+ paramName = string(data[mark:p]) 
+		case 9:
+//line parse.rl:70
+ log.data.properties = append(log.data.properties, Property{paramName,string(data[mark:p])}) 
 		case 10:
-//line parse.rl:71
+//line parse.rl:72
 
-      location := time.UTC
+      location = time.UTC
       if data[mark+19] == '.' {
         offset := 1
 
@@ -1246,7 +1247,7 @@ _match:
         location,
       ).UTC()
     
-//line parse.go:1250
+//line parse.go:1251
 		}
 	}
 
@@ -1266,12 +1267,12 @@ _again:
 			__acts++
 			switch _syslog_rfc5424_actions[__acts-1] {
 			case 0:
-//line parse.rl:55
+//line parse.rl:56
  mark = p 
 			case 11:
-//line parse.rl:108
- log.message = data[mark:p] 
-//line parse.go:1275
+//line parse.rl:109
+ log.message = string(data[mark:p]) 
+//line parse.go:1276
 			}
 		}
 	}
@@ -1279,7 +1280,7 @@ _again:
 	_out: {}
 	}
 
-//line parse.rl:113
+//line parse.rl:114
 
 
   if cs < syslog_rfc5424_first_final {
