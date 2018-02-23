@@ -40,7 +40,7 @@ func (s *UDPServer) Start() error {
 			continue
 		}
 
-		parsed, err := syslog.Parse(buffer[:n])
+		parsed, _, err := syslog.Parse(buffer[:n])
 		if err != nil {
 			log.Printf("could not parse msg: %s", err)
 			continue
