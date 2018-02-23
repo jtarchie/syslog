@@ -12,6 +12,6 @@ var err error
 func BenchmarkParsing(b *testing.B) {
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		_, err = syslog.Parse(payload)
+		_, _, err = syslog.Parse(payload)
 	}
 }

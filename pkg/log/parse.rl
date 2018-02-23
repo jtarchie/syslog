@@ -36,7 +36,7 @@ func atoi4(a []byte) int {
   int(a[0] - '0') * 1000
 }
 
-func Parse(data []byte) (*Log, error) {
+func Parse(data []byte) (*Log, int, error) {
   var (
     paramName string
     nanosecond int
@@ -54,6 +54,7 @@ func Parse(data []byte) (*Log, error) {
   // taken directly from https://tools.ietf.org/html/rfc5424#page-8
   %%{
     action mark      { mark = p }
+    action tcp_len   { pe, eof = atoi(data[mark:p]) + (p-mark), atoi(data[mark:p]) + (p-mark) }
     action version   { log.version = atoi(data[mark:p]) }
     action priority  { log.priority = atoi(data[mark:p]) }
     action hostname  { log.hostname = toString(data[mark:p]) }
@@ -114,8 +115,8 @@ func Parse(data []byte) (*Log, error) {
   }%%
 
   if cs < syslog_rfc5424_first_final {
-    return nil, fmt.Errorf("error in msg at pos %d: %s", p, data)
+    return nil, 0, fmt.Errorf("error in msg at pos %d: %s", p, data)
   }
 
-  return log, nil
+  return log, p, nil
 }
