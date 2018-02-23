@@ -23,8 +23,8 @@ func ParseLogMessageTests(message string) {
 	})
 
 	It("parses valid messages", func() {
-		_, n, err := syslog.Parse(payload)
-		Expect(n).To(Equal(len(payload)))
+		_, offset, err := syslog.Parse(payload)
+		Expect(offset).ToNot(Equal(0))
 		Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -174,17 +174,34 @@ func ParseLogMessageTests(message string) {
 	})
 }
 
-var _ = Describe("with a standard message", func() {
+var _ = Describe("with a standard payload", func() {
+	It("returns the correct offset", func() {
+		_, offset, _ := syslog.Parse(payload)
+		Expect(offset).To(Equal(len(validMessage)))
+	})
+
 	ParseLogMessageTests(validMessage)
 })
 
-var _ = Describe("with a TCP message", func() {
-	It("parses valid messages", func() {
-		payload := []byte(fmt.Sprintf("%d%s", len(validMessage), validMessage))
-		_, n, err := syslog.Parse(payload)
-		Expect(n).To(Equal(len(validMessage) + 3))
-		Expect(err).ToNot(HaveOccurred())
+var _ = Describe("with a TCP payload", func() {
+	Context("with a single message", func() {
+		payload := fmt.Sprintf("%d %s", len(validMessage), validMessage)
+
+		It("returns the correct offset", func() {
+			_, offset, _ := syslog.Parse([]byte(payload))
+			Expect(offset).To(Equal(len(validMessage) + 4))
+		})
+
+		ParseLogMessageTests(payload)
 	})
 
-	ParseLogMessageTests(fmt.Sprintf("%d%s", len(validMessage), validMessage))
+	Context("with a multiple payload", func() {
+		payload := fmt.Sprintf("%d %s%d %s", len(validMessage), validMessage, len(validMessage), validMessage)
+
+		It("returns the correct offset", func() {
+			_, offset, _ := syslog.Parse([]byte(payload))
+			Expect(offset).To(Equal(len(validMessage) + 4))
+		})
+		ParseLogMessageTests(payload)
+	})
 })

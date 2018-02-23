@@ -10,7 +10,7 @@ import (
 
 //line parse.go:12
 const syslog_rfc5424_start int = 1
-const syslog_rfc5424_first_final int = 583
+const syslog_rfc5424_first_final int = 584
 const syslog_rfc5424_error int = 0
 
 const syslog_rfc5424_en_main int = 1
@@ -113,14 +113,14 @@ func Parse(data []byte) (*Log, int, error) {
 		goto st_case_18
 	case 19:
 		goto st_case_19
-	case 583:
-		goto st_case_583
+	case 20:
+		goto st_case_20
 	case 584:
 		goto st_case_584
 	case 585:
 		goto st_case_585
-	case 20:
-		goto st_case_20
+	case 586:
+		goto st_case_586
 	case 21:
 		goto st_case_21
 	case 22:
@@ -1245,11 +1245,13 @@ func Parse(data []byte) (*Log, int, error) {
 		goto st_case_581
 	case 582:
 		goto st_case_582
+	case 583:
+		goto st_case_583
 	}
 	goto st_out
 	st_case_1:
 		if data[p] == 60 {
-			goto st3
+			goto st4
 		}
 		if 48 <= data[p] && data[p] <= 57 {
 			goto tr0
@@ -1268,24 +1270,33 @@ tr0:
 			goto _test_eof2
 		}
 	st_case_2:
-//line parse.go:1272
-		if data[p] == 60 {
-			goto tr4
+//line parse.go:1274
+		if data[p] == 32 {
+			goto tr3
 		}
 		if 48 <= data[p] && data[p] <= 57 {
 			goto st2
 		}
 		goto st0
-tr4:
+tr3:
 //line parse.rl:57
- pe, eof = atoi(data[mark:p]) + (p-mark), atoi(data[mark:p]) + (p-mark) 
+ pe, eof = atoi(data[mark:p]) + (p-mark) + 1, atoi(data[mark:p]) + (p-mark) + 1 
 	goto st3
 	st3:
 		if p++; p == pe {
 			goto _test_eof3
 		}
 	st_case_3:
-//line parse.go:1289
+//line parse.go:1291
+		if data[p] == 60 {
+			goto st4
+		}
+		goto st0
+	st4:
+		if p++; p == pe {
+			goto _test_eof4
+		}
+	st_case_4:
 		if 48 <= data[p] && data[p] <= 57 {
 			goto tr5
 		}
@@ -1293,25 +1304,13 @@ tr4:
 tr5:
 //line parse.rl:56
  mark = p 
-	goto st4
-	st4:
-		if p++; p == pe {
-			goto _test_eof4
-		}
-	st_case_4:
-//line parse.go:1303
-		if data[p] == 62 {
-			goto tr7
-		}
-		if 48 <= data[p] && data[p] <= 57 {
-			goto st5
-		}
-		goto st0
+	goto st5
 	st5:
 		if p++; p == pe {
 			goto _test_eof5
 		}
 	st_case_5:
+//line parse.go:1314
 		if data[p] == 62 {
 			goto tr7
 		}
@@ -1327,17 +1326,29 @@ tr5:
 		if data[p] == 62 {
 			goto tr7
 		}
+		if 48 <= data[p] && data[p] <= 57 {
+			goto st7
+		}
 		goto st0
-tr7:
-//line parse.rl:59
- log.priority = atoi(data[mark:p]) 
-	goto st7
 	st7:
 		if p++; p == pe {
 			goto _test_eof7
 		}
 	st_case_7:
-//line parse.go:1341
+		if data[p] == 62 {
+			goto tr7
+		}
+		goto st0
+tr7:
+//line parse.rl:59
+ log.priority = atoi(data[mark:p]) 
+	goto st8
+	st8:
+		if p++; p == pe {
+			goto _test_eof8
+		}
+	st_case_8:
+//line parse.go:1352
 		if 49 <= data[p] && data[p] <= 57 {
 			goto tr9
 		}
@@ -1345,44 +1356,44 @@ tr7:
 tr9:
 //line parse.rl:56
  mark = p 
-	goto st8
-	st8:
-		if p++; p == pe {
-			goto _test_eof8
-		}
-	st_case_8:
-//line parse.go:1355
-		if data[p] == 32 {
-			goto tr10
-		}
-		if 48 <= data[p] && data[p] <= 57 {
-			goto st581
-		}
-		goto st0
-tr10:
-//line parse.rl:58
- log.version = atoi(data[mark:p]) 
 	goto st9
 	st9:
 		if p++; p == pe {
 			goto _test_eof9
 		}
 	st_case_9:
-//line parse.go:1372
-		if data[p] == 45 {
-			goto st10
+//line parse.go:1366
+		if data[p] == 32 {
+			goto tr10
 		}
 		if 48 <= data[p] && data[p] <= 57 {
-			goto tr13
+			goto st582
 		}
 		goto st0
+tr10:
+//line parse.rl:58
+ log.version = atoi(data[mark:p]) 
+	goto st10
 	st10:
 		if p++; p == pe {
 			goto _test_eof10
 		}
 	st_case_10:
-		if data[p] == 32 {
+//line parse.go:1383
+		if data[p] == 45 {
 			goto st11
+		}
+		if 48 <= data[p] && data[p] <= 57 {
+			goto tr13
+		}
+		goto st0
+	st11:
+		if p++; p == pe {
+			goto _test_eof11
+		}
+	st_case_11:
+		if data[p] == 32 {
+			goto st12
 		}
 		goto st0
 tr582:
@@ -1424,13 +1435,13 @@ tr582:
         location,
       ).UTC()
     
-	goto st11
-	st11:
+	goto st12
+	st12:
 		if p++; p == pe {
-			goto _test_eof11
+			goto _test_eof12
 		}
-	st_case_11:
-//line parse.go:1434
+	st_case_12:
+//line parse.go:1445
 		if 33 <= data[p] && data[p] <= 126 {
 			goto tr15
 		}
@@ -1438,30 +1449,30 @@ tr582:
 tr15:
 //line parse.rl:56
  mark = p 
-	goto st12
-	st12:
-		if p++; p == pe {
-			goto _test_eof12
-		}
-	st_case_12:
-//line parse.go:1448
-		if data[p] == 32 {
-			goto tr16
-		}
-		if 33 <= data[p] && data[p] <= 126 {
-			goto st295
-		}
-		goto st0
-tr16:
-//line parse.rl:60
- log.hostname = toString(data[mark:p]) 
 	goto st13
 	st13:
 		if p++; p == pe {
 			goto _test_eof13
 		}
 	st_case_13:
-//line parse.go:1465
+//line parse.go:1459
+		if data[p] == 32 {
+			goto tr16
+		}
+		if 33 <= data[p] && data[p] <= 126 {
+			goto st296
+		}
+		goto st0
+tr16:
+//line parse.rl:60
+ log.hostname = toString(data[mark:p]) 
+	goto st14
+	st14:
+		if p++; p == pe {
+			goto _test_eof14
+		}
+	st_case_14:
+//line parse.go:1476
 		if 33 <= data[p] && data[p] <= 126 {
 			goto tr18
 		}
@@ -1469,30 +1480,30 @@ tr16:
 tr18:
 //line parse.rl:56
  mark = p 
-	goto st14
-	st14:
-		if p++; p == pe {
-			goto _test_eof14
-		}
-	st_case_14:
-//line parse.go:1479
-		if data[p] == 32 {
-			goto tr19
-		}
-		if 33 <= data[p] && data[p] <= 126 {
-			goto st248
-		}
-		goto st0
-tr19:
-//line parse.rl:61
- log.appname = toString(data[mark:p]) 
 	goto st15
 	st15:
 		if p++; p == pe {
 			goto _test_eof15
 		}
 	st_case_15:
-//line parse.go:1496
+//line parse.go:1490
+		if data[p] == 32 {
+			goto tr19
+		}
+		if 33 <= data[p] && data[p] <= 126 {
+			goto st249
+		}
+		goto st0
+tr19:
+//line parse.rl:61
+ log.appname = toString(data[mark:p]) 
+	goto st16
+	st16:
+		if p++; p == pe {
+			goto _test_eof16
+		}
+	st_case_16:
+//line parse.go:1507
 		if 33 <= data[p] && data[p] <= 126 {
 			goto tr21
 		}
@@ -1500,30 +1511,30 @@ tr19:
 tr21:
 //line parse.rl:56
  mark = p 
-	goto st16
-	st16:
-		if p++; p == pe {
-			goto _test_eof16
-		}
-	st_case_16:
-//line parse.go:1510
-		if data[p] == 32 {
-			goto tr22
-		}
-		if 33 <= data[p] && data[p] <= 126 {
-			goto st121
-		}
-		goto st0
-tr22:
-//line parse.rl:62
- log.procID = toString(data[mark:p]) 
 	goto st17
 	st17:
 		if p++; p == pe {
 			goto _test_eof17
 		}
 	st_case_17:
-//line parse.go:1527
+//line parse.go:1521
+		if data[p] == 32 {
+			goto tr22
+		}
+		if 33 <= data[p] && data[p] <= 126 {
+			goto st122
+		}
+		goto st0
+tr22:
+//line parse.rl:62
+ log.procID = toString(data[mark:p]) 
+	goto st18
+	st18:
+		if p++; p == pe {
+			goto _test_eof18
+		}
+	st_case_18:
+//line parse.go:1538
 		if 33 <= data[p] && data[p] <= 126 {
 			goto tr24
 		}
@@ -1531,35 +1542,35 @@ tr22:
 tr24:
 //line parse.rl:56
  mark = p 
-	goto st18
-	st18:
-		if p++; p == pe {
-			goto _test_eof18
-		}
-	st_case_18:
-//line parse.go:1541
-		if data[p] == 32 {
-			goto tr25
-		}
-		if 33 <= data[p] && data[p] <= 126 {
-			goto st90
-		}
-		goto st0
-tr25:
-//line parse.rl:63
- log.msgID = toString(data[mark:p]) 
 	goto st19
 	st19:
 		if p++; p == pe {
 			goto _test_eof19
 		}
 	st_case_19:
-//line parse.go:1558
+//line parse.go:1552
+		if data[p] == 32 {
+			goto tr25
+		}
+		if 33 <= data[p] && data[p] <= 126 {
+			goto st91
+		}
+		goto st0
+tr25:
+//line parse.rl:63
+ log.msgID = toString(data[mark:p]) 
+	goto st20
+	st20:
+		if p++; p == pe {
+			goto _test_eof20
+		}
+	st_case_20:
+//line parse.go:1569
 		switch data[p] {
 		case 45:
-			goto st583
+			goto st584
 		case 91:
-			goto st20
+			goto st21
 		}
 		goto st0
 tr32:
@@ -1570,39 +1581,39 @@ tr32:
         properties: make([]Property, 0, 5),
       }
     
-	goto st583
-	st583:
-		if p++; p == pe {
-			goto _test_eof583
-		}
-	st_case_583:
-//line parse.go:1580
-		if data[p] == 32 {
-			goto st584
-		}
-		goto st0
+	goto st584
 	st584:
 		if p++; p == pe {
 			goto _test_eof584
 		}
 	st_case_584:
-		goto tr591
-tr591:
-//line parse.rl:56
- mark = p 
-	goto st585
+//line parse.go:1591
+		if data[p] == 32 {
+			goto st585
+		}
+		goto st0
 	st585:
 		if p++; p == pe {
 			goto _test_eof585
 		}
 	st_case_585:
-//line parse.go:1600
-		goto st585
-	st20:
+		goto tr591
+tr591:
+//line parse.rl:56
+ mark = p 
+	goto st586
+	st586:
 		if p++; p == pe {
-			goto _test_eof20
+			goto _test_eof586
 		}
-	st_case_20:
+	st_case_586:
+//line parse.go:1611
+		goto st586
+	st21:
+		if p++; p == pe {
+			goto _test_eof21
+		}
+	st_case_21:
 		if data[p] == 33 {
 			goto tr29
 		}
@@ -1622,28 +1633,28 @@ tr591:
 tr29:
 //line parse.rl:56
  mark = p 
-	goto st21
-	st21:
+	goto st22
+	st22:
 		if p++; p == pe {
-			goto _test_eof21
+			goto _test_eof22
 		}
-	st_case_21:
-//line parse.go:1632
+	st_case_22:
+//line parse.go:1643
 		switch data[p] {
 		case 32:
 			goto tr30
 		case 33:
-			goto st59
+			goto st60
 		case 93:
 			goto tr32
 		}
 		switch {
 		case data[p] > 60:
 			if 62 <= data[p] && data[p] <= 126 {
-				goto st59
+				goto st60
 			}
 		case data[p] >= 35:
-			goto st59
+			goto st60
 		}
 		goto st0
 tr30:
@@ -1654,13 +1665,13 @@ tr30:
         properties: make([]Property, 0, 5),
       }
     
-	goto st22
-	st22:
+	goto st23
+	st23:
 		if p++; p == pe {
-			goto _test_eof22
+			goto _test_eof23
 		}
-	st_case_22:
-//line parse.go:1664
+	st_case_23:
+//line parse.go:1675
 		if data[p] == 33 {
 			goto tr33
 		}
@@ -1680,33 +1691,13 @@ tr30:
 tr33:
 //line parse.rl:56
  mark = p 
-	goto st23
-	st23:
-		if p++; p == pe {
-			goto _test_eof23
-		}
-	st_case_23:
-//line parse.go:1690
-		switch data[p] {
-		case 33:
-			goto st24
-		case 61:
-			goto tr35
-		}
-		switch {
-		case data[p] > 92:
-			if 94 <= data[p] && data[p] <= 126 {
-				goto st24
-			}
-		case data[p] >= 35:
-			goto st24
-		}
-		goto st0
+	goto st24
 	st24:
 		if p++; p == pe {
 			goto _test_eof24
 		}
 	st_case_24:
+//line parse.go:1701
 		switch data[p] {
 		case 33:
 			goto st25
@@ -2307,6 +2298,26 @@ tr33:
 			goto _test_eof54
 		}
 	st_case_54:
+		switch data[p] {
+		case 33:
+			goto st55
+		case 61:
+			goto tr35
+		}
+		switch {
+		case data[p] > 92:
+			if 94 <= data[p] && data[p] <= 126 {
+				goto st55
+			}
+		case data[p] >= 35:
+			goto st55
+		}
+		goto st0
+	st55:
+		if p++; p == pe {
+			goto _test_eof55
+		}
+	st_case_55:
 		if data[p] == 61 {
 			goto tr35
 		}
@@ -2314,22 +2325,22 @@ tr33:
 tr35:
 //line parse.rl:70
  paramName = string(data[mark:p]) 
-	goto st55
-	st55:
-		if p++; p == pe {
-			goto _test_eof55
-		}
-	st_case_55:
-//line parse.go:2324
-		if data[p] == 34 {
-			goto st56
-		}
-		goto st0
+	goto st56
 	st56:
 		if p++; p == pe {
 			goto _test_eof56
 		}
 	st_case_56:
+//line parse.go:2335
+		if data[p] == 34 {
+			goto st57
+		}
+		goto st0
+	st57:
+		if p++; p == pe {
+			goto _test_eof57
+		}
+	st_case_57:
 		if data[p] == 34 {
 			goto tr68
 		}
@@ -2337,60 +2348,38 @@ tr35:
 tr67:
 //line parse.rl:56
  mark = p 
-	goto st57
-	st57:
-		if p++; p == pe {
-			goto _test_eof57
-		}
-	st_case_57:
-//line parse.go:2347
-		if data[p] == 34 {
-			goto tr70
-		}
-		goto st57
-tr68:
-//line parse.rl:56
- mark = p 
-//line parse.rl:71
- log.data.properties = append(log.data.properties, Property{paramName,string(data[mark:p])}) 
-	goto st58
-tr70:
-//line parse.rl:71
- log.data.properties = append(log.data.properties, Property{paramName,string(data[mark:p])}) 
 	goto st58
 	st58:
 		if p++; p == pe {
 			goto _test_eof58
 		}
 	st_case_58:
-//line parse.go:2367
-		switch data[p] {
-		case 32:
-			goto st22
-		case 93:
-			goto st583
+//line parse.go:2358
+		if data[p] == 34 {
+			goto tr70
 		}
-		goto st0
+		goto st58
+tr68:
+//line parse.rl:56
+ mark = p 
+//line parse.rl:71
+ log.data.properties = append(log.data.properties, Property{paramName,string(data[mark:p])}) 
+	goto st59
+tr70:
+//line parse.rl:71
+ log.data.properties = append(log.data.properties, Property{paramName,string(data[mark:p])}) 
+	goto st59
 	st59:
 		if p++; p == pe {
 			goto _test_eof59
 		}
 	st_case_59:
+//line parse.go:2378
 		switch data[p] {
 		case 32:
-			goto tr30
-		case 33:
-			goto st60
+			goto st23
 		case 93:
-			goto tr32
-		}
-		switch {
-		case data[p] > 60:
-			if 62 <= data[p] && data[p] <= 126 {
-				goto st60
-			}
-		case data[p] >= 35:
-			goto st60
+			goto st584
 		}
 		goto st0
 	st60:
@@ -3039,8 +3028,18 @@ tr70:
 		switch data[p] {
 		case 32:
 			goto tr30
+		case 33:
+			goto st90
 		case 93:
 			goto tr32
+		}
+		switch {
+		case data[p] > 60:
+			if 62 <= data[p] && data[p] <= 126 {
+				goto st90
+			}
+		case data[p] >= 35:
+			goto st90
 		}
 		goto st0
 	st90:
@@ -3048,11 +3047,11 @@ tr70:
 			goto _test_eof90
 		}
 	st_case_90:
-		if data[p] == 32 {
-			goto tr25
-		}
-		if 33 <= data[p] && data[p] <= 126 {
-			goto st91
+		switch data[p] {
+		case 32:
+			goto tr30
+		case 93:
+			goto tr32
 		}
 		goto st0
 	st91:
@@ -3411,6 +3410,9 @@ tr70:
 		if data[p] == 32 {
 			goto tr25
 		}
+		if 33 <= data[p] && data[p] <= 126 {
+			goto st121
+		}
 		goto st0
 	st121:
 		if p++; p == pe {
@@ -3418,10 +3420,7 @@ tr70:
 		}
 	st_case_121:
 		if data[p] == 32 {
-			goto tr22
-		}
-		if 33 <= data[p] && data[p] <= 126 {
-			goto st122
+			goto tr25
 		}
 		goto st0
 	st122:
@@ -4932,6 +4931,9 @@ tr70:
 		if data[p] == 32 {
 			goto tr22
 		}
+		if 33 <= data[p] && data[p] <= 126 {
+			goto st248
+		}
 		goto st0
 	st248:
 		if p++; p == pe {
@@ -4939,10 +4941,7 @@ tr70:
 		}
 	st_case_248:
 		if data[p] == 32 {
-			goto tr19
-		}
-		if 33 <= data[p] && data[p] <= 126 {
-			goto st249
+			goto tr22
 		}
 		goto st0
 	st249:
@@ -5493,6 +5492,9 @@ tr70:
 		if data[p] == 32 {
 			goto tr19
 		}
+		if 33 <= data[p] && data[p] <= 126 {
+			goto st295
+		}
 		goto st0
 	st295:
 		if p++; p == pe {
@@ -5500,10 +5502,7 @@ tr70:
 		}
 	st_case_295:
 		if data[p] == 32 {
-			goto tr16
-		}
-		if 33 <= data[p] && data[p] <= 126 {
-			goto st296
+			goto tr19
 		}
 		goto st0
 	st296:
@@ -8538,26 +8537,29 @@ tr70:
 		if data[p] == 32 {
 			goto tr16
 		}
+		if 33 <= data[p] && data[p] <= 126 {
+			goto st549
+		}
 		goto st0
-tr13:
-//line parse.rl:56
- mark = p 
-	goto st549
 	st549:
 		if p++; p == pe {
 			goto _test_eof549
 		}
 	st_case_549:
-//line parse.go:8552
-		if 48 <= data[p] && data[p] <= 57 {
-			goto st550
+		if data[p] == 32 {
+			goto tr16
 		}
 		goto st0
+tr13:
+//line parse.rl:56
+ mark = p 
+	goto st550
 	st550:
 		if p++; p == pe {
 			goto _test_eof550
 		}
 	st_case_550:
+//line parse.go:8563
 		if 48 <= data[p] && data[p] <= 57 {
 			goto st551
 		}
@@ -8576,7 +8578,7 @@ tr13:
 			goto _test_eof552
 		}
 	st_case_552:
-		if data[p] == 45 {
+		if 48 <= data[p] && data[p] <= 57 {
 			goto st553
 		}
 		goto st0
@@ -8585,7 +8587,7 @@ tr13:
 			goto _test_eof553
 		}
 	st_case_553:
-		if 48 <= data[p] && data[p] <= 57 {
+		if data[p] == 45 {
 			goto st554
 		}
 		goto st0
@@ -8603,7 +8605,7 @@ tr13:
 			goto _test_eof555
 		}
 	st_case_555:
-		if data[p] == 45 {
+		if 48 <= data[p] && data[p] <= 57 {
 			goto st556
 		}
 		goto st0
@@ -8612,7 +8614,7 @@ tr13:
 			goto _test_eof556
 		}
 	st_case_556:
-		if 48 <= data[p] && data[p] <= 57 {
+		if data[p] == 45 {
 			goto st557
 		}
 		goto st0
@@ -8630,7 +8632,7 @@ tr13:
 			goto _test_eof558
 		}
 	st_case_558:
-		if data[p] == 84 {
+		if 48 <= data[p] && data[p] <= 57 {
 			goto st559
 		}
 		goto st0
@@ -8639,7 +8641,7 @@ tr13:
 			goto _test_eof559
 		}
 	st_case_559:
-		if 48 <= data[p] && data[p] <= 57 {
+		if data[p] == 84 {
 			goto st560
 		}
 		goto st0
@@ -8657,7 +8659,7 @@ tr13:
 			goto _test_eof561
 		}
 	st_case_561:
-		if data[p] == 58 {
+		if 48 <= data[p] && data[p] <= 57 {
 			goto st562
 		}
 		goto st0
@@ -8666,7 +8668,7 @@ tr13:
 			goto _test_eof562
 		}
 	st_case_562:
-		if 48 <= data[p] && data[p] <= 57 {
+		if data[p] == 58 {
 			goto st563
 		}
 		goto st0
@@ -8684,7 +8686,7 @@ tr13:
 			goto _test_eof564
 		}
 	st_case_564:
-		if data[p] == 58 {
+		if 48 <= data[p] && data[p] <= 57 {
 			goto st565
 		}
 		goto st0
@@ -8693,7 +8695,7 @@ tr13:
 			goto _test_eof565
 		}
 	st_case_565:
-		if 48 <= data[p] && data[p] <= 57 {
+		if data[p] == 58 {
 			goto st566
 		}
 		goto st0
@@ -8711,15 +8713,8 @@ tr13:
 			goto _test_eof567
 		}
 	st_case_567:
-		switch data[p] {
-		case 43:
+		if 48 <= data[p] && data[p] <= 57 {
 			goto st568
-		case 45:
-			goto st568
-		case 46:
-			goto st574
-		case 90:
-			goto st573
 		}
 		goto st0
 	st568:
@@ -8727,8 +8722,15 @@ tr13:
 			goto _test_eof568
 		}
 	st_case_568:
-		if 48 <= data[p] && data[p] <= 57 {
+		switch data[p] {
+		case 43:
 			goto st569
+		case 45:
+			goto st569
+		case 46:
+			goto st575
+		case 90:
+			goto st574
 		}
 		goto st0
 	st569:
@@ -8745,7 +8747,7 @@ tr13:
 			goto _test_eof570
 		}
 	st_case_570:
-		if data[p] == 58 {
+		if 48 <= data[p] && data[p] <= 57 {
 			goto st571
 		}
 		goto st0
@@ -8754,7 +8756,7 @@ tr13:
 			goto _test_eof571
 		}
 	st_case_571:
-		if 48 <= data[p] && data[p] <= 57 {
+		if data[p] == 58 {
 			goto st572
 		}
 		goto st0
@@ -8772,8 +8774,8 @@ tr13:
 			goto _test_eof573
 		}
 	st_case_573:
-		if data[p] == 32 {
-			goto tr582
+		if 48 <= data[p] && data[p] <= 57 {
+			goto st574
 		}
 		goto st0
 	st574:
@@ -8781,8 +8783,8 @@ tr13:
 			goto _test_eof574
 		}
 	st_case_574:
-		if 48 <= data[p] && data[p] <= 57 {
-			goto st575
+		if data[p] == 32 {
+			goto tr582
 		}
 		goto st0
 	st575:
@@ -8790,14 +8792,6 @@ tr13:
 			goto _test_eof575
 		}
 	st_case_575:
-		switch data[p] {
-		case 43:
-			goto st568
-		case 45:
-			goto st568
-		case 90:
-			goto st573
-		}
 		if 48 <= data[p] && data[p] <= 57 {
 			goto st576
 		}
@@ -8809,11 +8803,11 @@ tr13:
 	st_case_576:
 		switch data[p] {
 		case 43:
-			goto st568
+			goto st569
 		case 45:
-			goto st568
+			goto st569
 		case 90:
-			goto st573
+			goto st574
 		}
 		if 48 <= data[p] && data[p] <= 57 {
 			goto st577
@@ -8826,11 +8820,11 @@ tr13:
 	st_case_577:
 		switch data[p] {
 		case 43:
-			goto st568
+			goto st569
 		case 45:
-			goto st568
+			goto st569
 		case 90:
-			goto st573
+			goto st574
 		}
 		if 48 <= data[p] && data[p] <= 57 {
 			goto st578
@@ -8843,11 +8837,11 @@ tr13:
 	st_case_578:
 		switch data[p] {
 		case 43:
-			goto st568
+			goto st569
 		case 45:
-			goto st568
+			goto st569
 		case 90:
-			goto st573
+			goto st574
 		}
 		if 48 <= data[p] && data[p] <= 57 {
 			goto st579
@@ -8860,11 +8854,11 @@ tr13:
 	st_case_579:
 		switch data[p] {
 		case 43:
-			goto st568
+			goto st569
 		case 45:
-			goto st568
+			goto st569
 		case 90:
-			goto st573
+			goto st574
 		}
 		if 48 <= data[p] && data[p] <= 57 {
 			goto st580
@@ -8877,11 +8871,14 @@ tr13:
 	st_case_580:
 		switch data[p] {
 		case 43:
-			goto st568
+			goto st569
 		case 45:
-			goto st568
+			goto st569
 		case 90:
-			goto st573
+			goto st574
+		}
+		if 48 <= data[p] && data[p] <= 57 {
+			goto st581
 		}
 		goto st0
 	st581:
@@ -8889,11 +8886,13 @@ tr13:
 			goto _test_eof581
 		}
 	st_case_581:
-		if data[p] == 32 {
-			goto tr10
-		}
-		if 48 <= data[p] && data[p] <= 57 {
-			goto st582
+		switch data[p] {
+		case 43:
+			goto st569
+		case 45:
+			goto st569
+		case 90:
+			goto st574
 		}
 		goto st0
 	st582:
@@ -8901,6 +8900,18 @@ tr13:
 			goto _test_eof582
 		}
 	st_case_582:
+		if data[p] == 32 {
+			goto tr10
+		}
+		if 48 <= data[p] && data[p] <= 57 {
+			goto st583
+		}
+		goto st0
+	st583:
+		if p++; p == pe {
+			goto _test_eof583
+		}
+	st_case_583:
 		if data[p] == 32 {
 			goto tr10
 		}
@@ -8924,10 +8935,10 @@ tr13:
 	_test_eof17: cs = 17; goto _test_eof
 	_test_eof18: cs = 18; goto _test_eof
 	_test_eof19: cs = 19; goto _test_eof
-	_test_eof583: cs = 583; goto _test_eof
+	_test_eof20: cs = 20; goto _test_eof
 	_test_eof584: cs = 584; goto _test_eof
 	_test_eof585: cs = 585; goto _test_eof
-	_test_eof20: cs = 20; goto _test_eof
+	_test_eof586: cs = 586; goto _test_eof
 	_test_eof21: cs = 21; goto _test_eof
 	_test_eof22: cs = 22; goto _test_eof
 	_test_eof23: cs = 23; goto _test_eof
@@ -9490,19 +9501,20 @@ tr13:
 	_test_eof580: cs = 580; goto _test_eof
 	_test_eof581: cs = 581; goto _test_eof
 	_test_eof582: cs = 582; goto _test_eof
+	_test_eof583: cs = 583; goto _test_eof
 
 	_test_eof: {}
 	if p == eof {
 		switch cs {
-		case 585:
+		case 586:
 //line parse.rl:110
  log.message = string(data[mark:p]) 
-		case 584:
+		case 585:
 //line parse.rl:56
  mark = p 
 //line parse.rl:110
  log.message = string(data[mark:p]) 
-//line parse.go:9506
+//line parse.go:9518
 		}
 	}
 

@@ -45,7 +45,7 @@
   header   = pri version sp timestamp sp hostname sp app_name sp proc_id sp msg_id;
 
   syslog_msg = header sp structured_data (sp msg)?;
-  tcp_syslog_msg = (digit+ >mark %tcp_len) syslog_msg;
+  tcp_syslog_msg = (digit+ >mark %tcp_len) sp syslog_msg;
   main := tcp_syslog_msg | syslog_msg;
 
 }%%

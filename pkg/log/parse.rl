@@ -54,7 +54,7 @@ func Parse(data []byte) (*Log, int, error) {
   // taken directly from https://tools.ietf.org/html/rfc5424#page-8
   %%{
     action mark      { mark = p }
-    action tcp_len   { pe, eof = atoi(data[mark:p]) + (p-mark), atoi(data[mark:p]) + (p-mark) }
+    action tcp_len   { pe, eof = atoi(data[mark:p]) + (p-mark) + 1, atoi(data[mark:p]) + (p-mark) + 1 }
     action version   { log.version = atoi(data[mark:p]) }
     action priority  { log.priority = atoi(data[mark:p]) }
     action hostname  { log.hostname = toString(data[mark:p]) }
