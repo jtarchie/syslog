@@ -3,7 +3,11 @@ package syslog
 //go:generate ragel -e -G2 -Z parse.rl
 // go:generate ragel -Z parse.rl
 
-import "time"
+import (
+	"bytes"
+	"fmt"
+	"time"
+)
 
 type Property struct {
 	Key   string
@@ -77,4 +81,36 @@ func (m *Log) StructureData() structureData {
 
 func (m *Log) Message() string {
 	return m.message
+}
+
+func (m *Log) String() string {
+	var buffer bytes.Buffer
+	buffer.WriteString("<")
+	buffer.WriteString(fmt.Sprintf("%d", m.priority))
+	buffer.WriteString(">")
+	buffer.WriteString(fmt.Sprintf("%d", m.version))
+	buffer.WriteString(" ")
+	buffer.WriteString(m.timestamp.Format(time.RFC3339Nano))
+	buffer.WriteString(" ")
+	buffer.WriteString(m.hostname)
+	buffer.WriteString(" ")
+	buffer.WriteString(m.appname)
+	buffer.WriteString(" ")
+	buffer.WriteString(m.procID)
+	buffer.WriteString(" ")
+	buffer.WriteString(m.msgID)
+	buffer.WriteString(" ")
+	buffer.WriteString("[")
+	buffer.WriteString(m.data.id)
+	for _, property := range m.data.properties {
+		buffer.WriteString(" ")
+		buffer.WriteString(property.Key)
+		buffer.WriteString(`="`)
+		buffer.WriteString(property.Value)
+		buffer.WriteString(`"`)
+	}
+	buffer.WriteString("]")
+	buffer.WriteString(" ")
+	buffer.WriteString(m.message)
+	return buffer.String()
 }

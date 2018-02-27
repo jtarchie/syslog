@@ -28,6 +28,11 @@ func ParseLogMessageTests(message string) {
 		Expect(err).ToNot(HaveOccurred())
 	})
 
+	It("renders back to its original format", func() {
+		log, _, _ := syslog.Parse(payload)
+		Expect(log.String()).To(Equal(validMessage))
+	})
+
 	It("sets the version", func() {
 		log, _, _ := syslog.Parse(payload)
 		Expect(log.Version()).To(Equal(1))
@@ -50,128 +55,47 @@ func ParseLogMessageTests(message string) {
 		})
 	})
 
-	Context("with the timestamp", func() {
-		It("returns a valid date object", func() {
-			log, _, _ := syslog.Parse(payload)
-			Expect(log.Timestamp().String()).To(Equal("2003-10-11 22:14:15.003 +0000 UTC"))
-		})
-
-		Context("with the example timestamps from the RFC", func() {
-			It("can parse them all", func() {
-				timestamp := func(t string) time.Time {
-					payload := []byte("<34>1 " + t + " mymachine.example.com su - - - 'su root' failed for lonvick on /dev/pts/8")
-					log, _, err := syslog.Parse(payload)
-					Expect(err).ToNot(HaveOccurred())
-
-					return log.Timestamp()
-				}
-
-				Expect(timestamp("2003-10-11T22:14:15.00003Z").String()).To(Equal("2003-10-11 22:14:15.00003 +0000 UTC"))
-				Expect(timestamp("1985-04-12T23:20:50.52Z").String()).To(Equal("1985-04-12 23:20:50.52 +0000 UTC"))
-				Expect(timestamp("1985-04-12T23:20:50.52+00:00").String()).To(Equal("1985-04-12 23:20:50.52 +0000 UTC"))
-				Expect(timestamp("1985-04-12T23:20:50.52+02:00").String()).To(Equal("1985-04-12 21:20:50.52 +0000 UTC"))
-				Expect(timestamp("1985-04-12T18:20:50.52-02:00").String()).To(Equal("1985-04-12 20:20:50.52 +0000 UTC"))
-			})
-
-			It("fails parsing on unsupported formats", func() {
-				payload := []byte("<34>1 2003-10-11T22:14:15.003Z07:00 mymachine.example.com su - - - 'su root' failed for lonvick on /dev/pts/8")
-				_, n, err := syslog.Parse(payload)
-				Expect(n).To(Equal(0))
-				Expect(err).To(HaveOccurred())
-			})
-		})
-
-		It("is nil when '-'", func() {
-			payload := []byte("<34>1 - - su - - - 'su root' failed for lonvick on /dev/pts/8")
-			log, _, _ := syslog.Parse(payload)
-			Expect(log.Timestamp().IsZero()).To(BeTrue())
-		})
+	It("returns a valid date object", func() {
+		log, _, _ := syslog.Parse(payload)
+		Expect(log.Timestamp().String()).To(Equal("2003-10-11 22:14:15.003 +0000 UTC"))
 	})
 
-	Context("with the hostname", func() {
-		It("sets the hostname", func() {
-			log, _, _ := syslog.Parse(payload)
-			Expect(log.Hostname()).To(BeEquivalentTo("mymachine.example.com"))
-		})
-
-		It("is nil when '-'", func() {
-			payload := []byte("<34>1 2003-10-11T22:14:15.003Z - su - - - 'su root' failed for lonvick on /dev/pts/8")
-			log, _, _ := syslog.Parse(payload)
-			Expect(log.Hostname()).To(BeEmpty())
-		})
+	It("sets the hostname", func() {
+		log, _, _ := syslog.Parse(payload)
+		Expect(log.Hostname()).To(BeEquivalentTo("mymachine.example.com"))
 	})
 
-	Context("with the app name", func() {
-		It("sets the app name", func() {
-			log, _, _ := syslog.Parse(payload)
-			Expect(log.Appname()).To(BeEquivalentTo("su"))
-		})
-
-		It("is nil when '-'", func() {
-			payload := []byte("<34>1 2003-10-11T22:14:15.003Z - - - - - 'su root' failed for lonvick on /dev/pts/8")
-			log, _, _ := syslog.Parse(payload)
-			Expect(log.Appname()).To(BeEmpty())
-		})
+	It("sets the app name", func() {
+		log, _, _ := syslog.Parse(payload)
+		Expect(log.Appname()).To(BeEquivalentTo("su"))
 	})
 
-	Context("with the proc id", func() {
-		It("sets the proc id", func() {
-			log, _, _ := syslog.Parse(payload)
-			Expect(log.ProcID()).To(BeEquivalentTo("12345"))
-		})
-
-		It("is nil when '-'", func() {
-			payload := []byte("<34>1 2003-10-11T22:14:15.003Z - - - - - 'su root' failed for lonvick on /dev/pts/8")
-			log, _, _ := syslog.Parse(payload)
-			Expect(log.ProcID()).To(BeEmpty())
-		})
+	It("sets the proc id", func() {
+		log, _, _ := syslog.Parse(payload)
+		Expect(log.ProcID()).To(BeEquivalentTo("12345"))
 	})
 
-	Context("with the log id", func() {
-		It("sets the log id", func() {
-			log, _, _ := syslog.Parse(payload)
-			Expect(log.MsgID()).To(BeEquivalentTo("98765"))
-		})
-
-		It("is nil when '-'", func() {
-			payload := []byte("<34>1 2003-10-11T22:14:15.003Z - - - - - 'su root' failed for lonvick on /dev/pts/8")
-			log, _, _ := syslog.Parse(payload)
-			Expect(log.MsgID()).To(BeEmpty())
-		})
+	It("sets the log id", func() {
+		log, _, _ := syslog.Parse(payload)
+		Expect(log.MsgID()).To(BeEquivalentTo("98765"))
 	})
 
-	Context("with structure data", func() {
-		It("sets structure data", func() {
-			log, _, _ := syslog.Parse(payload)
-			data := log.StructureData()
-			Expect(data.ID()).To(BeEquivalentTo("exampleSDID@32473"))
-			Expect(data.Properties()).To(BeEquivalentTo([]syslog.Property{
-				{"iut", "3"},
-				{"eventSource", "Application"},
-				{"eventID", "1011"},
-			}))
-		})
-
-		It("is nil when '-'", func() {
-			payload := []byte("<34>1 2003-10-11T22:14:15.003Z - - - - - 'su root' failed for lonvick on /dev/pts/8")
-			log, _, _ := syslog.Parse(payload)
-			Expect(log.StructureData().ID()).To(BeEmpty())
-			Expect(log.StructureData().Properties()).To(BeNil())
-		})
+	It("sets structure data", func() {
+		log, _, _ := syslog.Parse(payload)
+		data := log.StructureData()
+		Expect(data.ID()).To(BeEquivalentTo("exampleSDID@32473"))
+		Expect(data.Properties()).To(BeEquivalentTo([]syslog.Property{
+			{"iut", "3"},
+			{"eventSource", "Application"},
+			{"eventID", "1011"},
+		}))
 	})
 
-	Context("with a message", func() {
-		It("sets the message", func() {
-			log, _, _ := syslog.Parse(payload)
-			Expect(log.Message()).To(BeEquivalentTo("'su root' failed for lonvick on /dev/pts/8"))
-		})
-
-		It("sets nil for no message", func() {
-			payload := []byte("<34>1 2003-10-11T22:14:15.003Z - - - - -")
-			log, _, _ := syslog.Parse(payload)
-			Expect(log.Message()).To(BeEmpty())
-		})
+	It("sets the message", func() {
+		log, _, _ := syslog.Parse(payload)
+		Expect(log.Message()).To(BeEquivalentTo("'su root' failed for lonvick on /dev/pts/8"))
 	})
+
 }
 
 var _ = Describe("with a standard payload", func() {
@@ -181,6 +105,87 @@ var _ = Describe("with a standard payload", func() {
 	})
 
 	ParseLogMessageTests(validMessage)
+
+	Context("with the hostname", func() {
+		It("is empty when '-'", func() {
+			payload := []byte("<34>1 2003-10-11T22:14:15.003Z - su - - - 'su root' failed for lonvick on /dev/pts/8")
+			log, _, _ := syslog.Parse(payload)
+			Expect(log.Hostname()).To(BeEmpty())
+		})
+	})
+
+	Context("with the app name", func() {
+		It("is empty when '-'", func() {
+			payload := []byte("<34>1 2003-10-11T22:14:15.003Z - - - - - 'su root' failed for lonvick on /dev/pts/8")
+			log, _, _ := syslog.Parse(payload)
+			Expect(log.Appname()).To(BeEmpty())
+		})
+	})
+
+	Context("with the proc id", func() {
+		It("is empty when '-'", func() {
+			payload := []byte("<34>1 2003-10-11T22:14:15.003Z - - - - - 'su root' failed for lonvick on /dev/pts/8")
+			log, _, _ := syslog.Parse(payload)
+			Expect(log.ProcID()).To(BeEmpty())
+		})
+	})
+
+	Context("with the log id", func() {
+		It("is empty when '-'", func() {
+			payload := []byte("<34>1 2003-10-11T22:14:15.003Z - - - - - 'su root' failed for lonvick on /dev/pts/8")
+			log, _, _ := syslog.Parse(payload)
+			Expect(log.MsgID()).To(BeEmpty())
+		})
+	})
+
+	Context("with structure data", func() {
+		It("is empty when '-'", func() {
+			payload := []byte("<34>1 2003-10-11T22:14:15.003Z - - - - - 'su root' failed for lonvick on /dev/pts/8")
+			log, _, _ := syslog.Parse(payload)
+			Expect(log.StructureData().ID()).To(BeEmpty())
+			Expect(log.StructureData().Properties()).To(BeNil())
+		})
+	})
+
+	Context("with a message", func() {
+		It("sets empty for no message", func() {
+			payload := []byte("<34>1 2003-10-11T22:14:15.003Z - - - - -")
+			log, _, _ := syslog.Parse(payload)
+			Expect(log.Message()).To(BeEmpty())
+		})
+	})
+
+	Context("with the example timestamps from the RFC", func() {
+		It("can parse them all", func() {
+			timestamp := func(t string) time.Time {
+				payload := []byte("<34>1 " + t + " mymachine.example.com su - - - 'su root' failed for lonvick on /dev/pts/8")
+				log, _, err := syslog.Parse(payload)
+				Expect(err).ToNot(HaveOccurred())
+
+				return log.Timestamp()
+			}
+
+			Expect(timestamp("2003-10-11T22:14:15.00003Z").String()).To(Equal("2003-10-11 22:14:15.00003 +0000 UTC"))
+			Expect(timestamp("1985-04-12T23:20:50.52Z").String()).To(Equal("1985-04-12 23:20:50.52 +0000 UTC"))
+			Expect(timestamp("1985-04-12T23:20:50.52+00:00").String()).To(Equal("1985-04-12 23:20:50.52 +0000 UTC"))
+			Expect(timestamp("1985-04-12T23:20:50.52+02:00").String()).To(Equal("1985-04-12 21:20:50.52 +0000 UTC"))
+			Expect(timestamp("1985-04-12T18:20:50.52-02:00").String()).To(Equal("1985-04-12 20:20:50.52 +0000 UTC"))
+		})
+
+		It("fails parsing on unsupported formats", func() {
+			payload := []byte("<34>1 2003-10-11T22:14:15.003Z07:00 mymachine.example.com su - - - 'su root' failed for lonvick on /dev/pts/8")
+			_, n, err := syslog.Parse(payload)
+			Expect(n).To(Equal(0))
+			Expect(err).To(HaveOccurred())
+		})
+
+		It("is sets empty when '-'", func() {
+			payload := []byte("<34>1 - - su - - - 'su root' failed for lonvick on /dev/pts/8")
+			log, _, _ := syslog.Parse(payload)
+			Expect(log.Timestamp().IsZero()).To(BeTrue())
+		})
+	})
+
 })
 
 var _ = Describe("with a TCP payload", func() {

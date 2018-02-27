@@ -18,8 +18,14 @@ type Server struct {
 }
 
 type doc struct {
-	Hostname string
-	Message  string
+	Version   int
+	Priority  int
+	Timestamp time.Time
+	Hostname  string
+	AppName   string
+	ProcID    string
+	MsgID     string
+	Message   string
 }
 
 func NewServer(port int) *Server {
@@ -32,8 +38,14 @@ func (s *Server) Write(l *syslog.Log) error {
 	id := strconv.FormatInt(time.Now().UnixNano(), 10)
 
 	return s.index.Index(id, doc{
-		Hostname: string(l.Hostname()),
-		Message:  string(l.Message()),
+		Version:   l.Version(),
+		Priority:  l.Priority(),
+		Timestamp: l.Timestamp(),
+		Hostname:  l.Hostname(),
+		AppName:   l.Appname(),
+		ProcID:    l.ProcID(),
+		MsgID:     l.MsgID(),
+		Message:   l.Message(),
 	})
 }
 
@@ -49,7 +61,13 @@ func (s *Server) Start() error {
 	}
 
 	mux := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		html := "<html><body><pre>"
+		html := `
+		<html>
+		<head>
+			<link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+		</head>
+		<body>
+		<div class="container">`
 
 		query := bleve.NewQueryStringQuery(r.URL.Query().Get("q"))
 		search := bleve.NewSearchRequest(query)
@@ -62,7 +80,7 @@ func (s *Server) Start() error {
 		} else {
 			html += fmt.Sprint(results)
 		}
-		html += "</pre></body></html>"
+		html += `</div></body></html>`
 		w.Write([]byte(html))
 	})
 
