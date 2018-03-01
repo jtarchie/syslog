@@ -97,13 +97,15 @@ func (s *Server) Start() error {
 			<link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
 		</head>
 		<body>
-		<div class="container">
-		<form type="GET" action="/">
-			<div class="form-group row">
-				<label for="q" class="col-sm-2 col-form-label">Query</label>
-				<input type="text" id="q" name="q" value="%s" class="col-sm-9">
+		<nav class="navbar navbar-expand-kg navbar-dark bg-dark sticky-top">
+			<div class="container">
+			<a class="navbar-brand" href="/">Syslog Search</a>
+			<form class="form-inline my-md-0" type="GET" action="/">
+				<input placeholder="Search" type="search" id="q" name="q" value="%s" class="form-control">
+			</form>
 			</div>
-		</form>
+		</nav>
+		<div class="container">
 		`, html.EscapeString(r.URL.Query().Get("q")))
 
 		query := bleve.NewQueryStringQuery(r.URL.Query().Get("q"))
@@ -120,12 +122,32 @@ func (s *Server) Start() error {
 
 				for _, hit := range result.Hits {
 					value := bucket.Get([]byte(hit.ID))
-					html += fmt.Sprintf("<p>%s</p>", value)
+					log, _, err := syslog.Parse(value)
+					if err != nil {
+						continue
+					}
+
+					html += fmt.Sprintf(
+						`<div class="line">&lt;<span class="priority">%d</span>&gt;<span class="version">%d</span> <span class="timestamp">%s</a> <span class="hostname">%s</span> <span class="appname=">%s</span> <span class="procid">%s</span> <span class="msgid">%s</span> <span class="structured-data">%s</span> <span class="message">%s</span></div>`,
+						log.Priority(),
+						log.Version(),
+						log.Timestamp(),
+						log.Hostname(),
+						log.Appname(),
+						log.ProcID(),
+						log.MsgID(),
+						log.StructureData(),
+						log.Message(),
+					)
 				}
 				return nil
 			})
 		}
-		html += `</div></body></html>`
+		html += `
+		</div>
+		<script>document.getElementById('q').focus();</script>
+		</body></html>
+		`
 		w.Write([]byte(html))
 	})
 

@@ -29,25 +29,45 @@ func NewUDPServer(port int, w Writer) (*UDPServer, error) {
 }
 
 func (s *UDPServer) Start() error {
+	queue := make(chan []byte, 10000)
+
 	log.Printf("udp: starting server on addr %s", s.listener.LocalAddr().String())
 	defer s.listener.Close()
 
+	for i := 1; i <= 10; i++ {
+		go func() {
+			for {
+				select {
+				case buffer := <-queue:
+					parsed, _, err := syslog.Parse(buffer)
+					if err != nil {
+						log.Printf("could not parse msg: %s", err)
+						continue
+					}
+					s.writer.Write(parsed)
+				}
+			}
+		}()
+	}
+
 	buffer := make([]byte, 1024)
+	failed, total := 0, 0
 	for {
 		n, _, err := s.listener.ReadFrom(buffer)
 		if err != nil {
 			log.Printf("could not read from UDP: %s", err)
 			continue
 		}
-
-		parsed, _, err := syslog.Parse(buffer[:n])
-		if err != nil {
-			log.Printf("could not parse msg: %s", err)
-			continue
+		total += 1
+		select {
+		case queue <- buffer[:n]:
+		default:
+			failed += 1
+			if failed%1000 == 0 {
+				log.Printf("udp: unable to proccess %d/%d messages with %d in queue", failed, total, len(queue))
+			}
 		}
-		s.writer.Write(parsed)
 	}
-	return nil
 }
 
 func (s *UDPServer) Addr() net.Addr {
