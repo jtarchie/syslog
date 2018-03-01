@@ -27,6 +27,25 @@ func (s structureData) Properties() []Property {
 	return s.properties
 }
 
+func (s structureData) String() string {
+	if s.id == "" {
+		return "-"
+	}
+
+	var buffer bytes.Buffer
+	buffer.WriteString("[")
+	buffer.WriteString(s.id)
+	for _, property := range s.properties {
+		buffer.WriteString(" ")
+		buffer.WriteString(property.Key)
+		buffer.WriteString(`="`)
+		buffer.WriteString(property.Value)
+		buffer.WriteString(`"`)
+	}
+	buffer.WriteString("]")
+	return buffer.String()
+}
+
 type Log struct {
 	version   int
 	priority  int
@@ -90,27 +109,40 @@ func (m *Log) String() string {
 	buffer.WriteString(">")
 	buffer.WriteString(fmt.Sprintf("%d", m.version))
 	buffer.WriteString(" ")
-	buffer.WriteString(m.timestamp.Format(time.RFC3339Nano))
-	buffer.WriteString(" ")
-	buffer.WriteString(m.hostname)
-	buffer.WriteString(" ")
-	buffer.WriteString(m.appname)
-	buffer.WriteString(" ")
-	buffer.WriteString(m.procID)
-	buffer.WriteString(" ")
-	buffer.WriteString(m.msgID)
-	buffer.WriteString(" ")
-	buffer.WriteString("[")
-	buffer.WriteString(m.data.id)
-	for _, property := range m.data.properties {
-		buffer.WriteString(" ")
-		buffer.WriteString(property.Key)
-		buffer.WriteString(`="`)
-		buffer.WriteString(property.Value)
-		buffer.WriteString(`"`)
+	if m.timestamp.IsZero() {
+		buffer.WriteString("-")
+	} else {
+		buffer.WriteString(m.timestamp.Format(time.RFC3339Nano))
 	}
-	buffer.WriteString("]")
 	buffer.WriteString(" ")
-	buffer.WriteString(m.message)
+	if m.hostname == "" {
+		buffer.WriteString("-")
+	} else {
+		buffer.WriteString(m.hostname)
+	}
+	buffer.WriteString(" ")
+	if m.appname == "" {
+		buffer.WriteString("-")
+	} else {
+		buffer.WriteString(m.appname)
+	}
+	buffer.WriteString(" ")
+	if m.procID == "" {
+		buffer.WriteString("-")
+	} else {
+		buffer.WriteString(m.procID)
+	}
+	buffer.WriteString(" ")
+	if m.msgID == "" {
+		buffer.WriteString("-")
+	} else {
+		buffer.WriteString(m.msgID)
+	}
+	buffer.WriteString(" ")
+	buffer.WriteString(m.data.String())
+	if m.message != "" {
+		buffer.WriteString(" ")
+		buffer.WriteString(m.message)
+	}
 	return buffer.String()
 }

@@ -111,6 +111,7 @@ var _ = Describe("with a standard payload", func() {
 			payload := []byte("<34>1 2003-10-11T22:14:15.003Z - su - - - 'su root' failed for lonvick on /dev/pts/8")
 			log, _, _ := syslog.Parse(payload)
 			Expect(log.Hostname()).To(BeEmpty())
+			Expect(log.String()).To(BeEquivalentTo(payload))
 		})
 	})
 
@@ -119,6 +120,7 @@ var _ = Describe("with a standard payload", func() {
 			payload := []byte("<34>1 2003-10-11T22:14:15.003Z - - - - - 'su root' failed for lonvick on /dev/pts/8")
 			log, _, _ := syslog.Parse(payload)
 			Expect(log.Appname()).To(BeEmpty())
+			Expect(log.String()).To(BeEquivalentTo(payload))
 		})
 	})
 
@@ -127,6 +129,7 @@ var _ = Describe("with a standard payload", func() {
 			payload := []byte("<34>1 2003-10-11T22:14:15.003Z - - - - - 'su root' failed for lonvick on /dev/pts/8")
 			log, _, _ := syslog.Parse(payload)
 			Expect(log.ProcID()).To(BeEmpty())
+			Expect(log.String()).To(BeEquivalentTo(payload))
 		})
 	})
 
@@ -135,6 +138,7 @@ var _ = Describe("with a standard payload", func() {
 			payload := []byte("<34>1 2003-10-11T22:14:15.003Z - - - - - 'su root' failed for lonvick on /dev/pts/8")
 			log, _, _ := syslog.Parse(payload)
 			Expect(log.MsgID()).To(BeEmpty())
+			Expect(log.String()).To(BeEquivalentTo(payload))
 		})
 	})
 
@@ -144,6 +148,7 @@ var _ = Describe("with a standard payload", func() {
 			log, _, _ := syslog.Parse(payload)
 			Expect(log.StructureData().ID()).To(BeEmpty())
 			Expect(log.StructureData().Properties()).To(BeNil())
+			Expect(log.String()).To(BeEquivalentTo(payload))
 		})
 	})
 
@@ -152,6 +157,7 @@ var _ = Describe("with a standard payload", func() {
 			payload := []byte("<34>1 2003-10-11T22:14:15.003Z - - - - -")
 			log, _, _ := syslog.Parse(payload)
 			Expect(log.Message()).To(BeEmpty())
+			Expect(log.String()).To(BeEquivalentTo(payload))
 		})
 	})
 
@@ -183,6 +189,7 @@ var _ = Describe("with a standard payload", func() {
 			payload := []byte("<34>1 - - su - - - 'su root' failed for lonvick on /dev/pts/8")
 			log, _, _ := syslog.Parse(payload)
 			Expect(log.Timestamp().IsZero()).To(BeTrue())
+			Expect(log.String()).To(BeEquivalentTo(payload))
 		})
 	})
 
@@ -208,5 +215,10 @@ var _ = Describe("with a TCP payload", func() {
 			Expect(offset).To(Equal(len(validMessage) + 4))
 		})
 		ParseLogMessageTests(payload)
+	})
+
+	It("works with these messages", func() {
+		_, _, err := syslog.Parse([]byte(`<4>1 2018-02-02T18:30:55.968Z worker-25.example.com flood 64974 937 - This is message 937 from worker`))
+		Expect(err).ToNot(HaveOccurred())
 	})
 })
