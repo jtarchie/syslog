@@ -2,6 +2,7 @@ package syslog_test
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/jtarchie/syslog/pkg/log"
@@ -18,6 +19,11 @@ type benchCase struct {
 	input []byte
 	label string
 	valid bool
+}
+
+func rxpad(str string, lim int) string {
+	str = str + strings.Repeat(" ", lim)
+	return str[:lim]
 }
 
 var benchCases = []benchCase{
@@ -116,7 +122,7 @@ var benchCases = []benchCase{
 func BenchmarkParse(b *testing.B) {
 	for _, tc := range benchCases {
 		tc := tc
-		b.Run(tc.label, func(b *testing.B) {
+		b.Run(rxpad(tc.label, 50), func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
 				benchParseResult, _, _ = syslog.Parse(tc.input)
 			}
