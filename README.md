@@ -16,7 +16,7 @@ go get github.com/jtarchie/syslog
 import "github.com/jtarchie/syslog/pkg/log"
 
 // ... some code far away ...
-log, err := syslog.Parse(line)
+log, offset, err := syslog.Parse(line)
 if err != nil {
   println("Error", err)
 }
