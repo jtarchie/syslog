@@ -18,7 +18,7 @@
   sd_id           = sd_name >mark %sdid;
   sd_param        = param_name '="' param_value :>> '"';
   sd_element      = "[" sd_id ( sp sd_param )* "]";
-  structured_data = nil | sd_element{1};
+  structured_data = nil | sd_element{1,};
 
   time_hour      = digit{2};
   time_minute    = digit{2};

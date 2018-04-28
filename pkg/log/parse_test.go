@@ -82,7 +82,7 @@ func ParseLogMessageTests(message string) {
 
 	It("sets structure data", func() {
 		log, _, _ := syslog.Parse(payload)
-		data := log.StructureData()
+		data := log.StructureData()[0]
 		Expect(data.ID()).To(BeEquivalentTo("exampleSDID@32473"))
 		Expect(data.Properties()).To(BeEquivalentTo([]syslog.Property{
 			{"iut", "3"},
@@ -100,7 +100,7 @@ func ParseLogMessageTests(message string) {
 
 var _ = Describe("with a standard payload", func() {
 	It("returns the correct offset", func() {
-		_, offset, _ := syslog.Parse(payload)
+		_, offset, _ := syslog.Parse([]byte(validMessage))
 		Expect(offset).To(Equal(len(validMessage)))
 	})
 
@@ -146,8 +146,7 @@ var _ = Describe("with a standard payload", func() {
 		It("is empty when '-'", func() {
 			payload := []byte("<34>1 2003-10-11T22:14:15.003Z - - - - - 'su root' failed for lonvick on /dev/pts/8")
 			log, _, _ := syslog.Parse(payload)
-			Expect(log.StructureData().ID()).To(BeEmpty())
-			Expect(log.StructureData().Properties()).To(BeNil())
+			Expect(log.StructureData()).To(HaveLen(0))
 			Expect(log.String()).To(BeEquivalentTo(payload))
 		})
 	})
@@ -158,6 +157,24 @@ var _ = Describe("with a standard payload", func() {
 			log, _, _ := syslog.Parse(payload)
 			Expect(log.Message()).To(BeEmpty())
 			Expect(log.String()).To(BeEquivalentTo(payload))
+		})
+	})
+
+	Context("with multiple structure data elements", func() {
+		It("parses them all", func() {
+			payload := []byte(`<29>50 2016-01-15T01:00:43Z hn S - - [my@id1 k="v"][my@id2 c="val"]`)
+			log, _, err := syslog.Parse(payload)
+			Expect(err).ToNot(HaveOccurred())
+			data := log.StructureData()[0]
+			Expect(data.ID()).To(BeEquivalentTo("my@id1"))
+			Expect(data.Properties()).To(BeEquivalentTo([]syslog.Property{
+				{"k", "v"},
+			}))
+			data = log.StructureData()[1]
+			Expect(data.ID()).To(BeEquivalentTo("my@id2"))
+			Expect(data.Properties()).To(BeEquivalentTo([]syslog.Property{
+				{"c", "val"},
+			}))
 		})
 	})
 

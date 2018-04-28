@@ -14,20 +14,20 @@ type Property struct {
 	Value string
 }
 
-type structureData struct {
+type structureElement struct {
 	id         string
 	properties []Property
 }
 
-func (s structureData) ID() string {
+func (s structureElement) ID() string {
 	return s.id
 }
 
-func (s structureData) Properties() []Property {
+func (s structureElement) Properties() []Property {
 	return s.properties
 }
 
-func (s structureData) String() string {
+func (s structureElement) String() string {
 	if s.id == "" {
 		return "-"
 	}
@@ -43,6 +43,20 @@ func (s structureData) String() string {
 		buffer.WriteString(`"`)
 	}
 	buffer.WriteString("]")
+	return buffer.String()
+}
+
+type structureData []structureElement
+
+func (s structureData) String() string {
+	if len(s) == 0 {
+		return "-"
+	}
+
+	var buffer bytes.Buffer
+	for _, element := range s {
+		buffer.WriteString(element.String())
+	}
 	return buffer.String()
 }
 

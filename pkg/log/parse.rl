@@ -62,13 +62,13 @@ func Parse(data []byte) (*Log, int, error) {
     action procid    { log.procID = toString(data[mark:p]) }
     action msgid     { log.msgID = toString(data[mark:p]) }
     action sdid      {
-      log.data = structureData{
+      log.data = append(log.data, structureElement{
         id: string(data[mark:p]),
         properties: make([]Property, 0, 5),
-      }
+      })
     }
     action paramname  { paramName = string(data[mark:p]) }
-    action paramvalue { log.data.properties = append(log.data.properties, Property{paramName,string(data[mark:p])}) }
+    action paramvalue { log.data[len(log.data)-1].properties = append(log.data[len(log.data)-1].properties, Property{paramName,string(data[mark:p])}) }
 
     action timestamp {
       location = time.UTC
