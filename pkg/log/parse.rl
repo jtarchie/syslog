@@ -3,6 +3,7 @@ package syslog
 import (
   "fmt"
   "time"
+  "bytes"
 )
 
 %%{
@@ -44,6 +45,7 @@ func Parse(data []byte) (*Log, int, error) {
 
   log := &Log{}
   var location *time.Location
+  var buffer bytes.Buffer
 
   // set defaults for state machine parsing
   cs, p, pe, eof := 0, 0, len(data), len(data)
@@ -68,7 +70,16 @@ func Parse(data []byte) (*Log, int, error) {
       })
     }
     action paramname  { paramName = string(data[mark:p]) }
-    action paramvalue { log.data[len(log.data)-1].properties = append(log.data[len(log.data)-1].properties, Property{paramName,string(data[mark:p])}) }
+    action escaped    {
+      buffer.Write(data[mark:p-2])
+      buffer.WriteByte(data[p-1])
+      mark = p
+    }
+    action paramvalue {
+      buffer.Write(data[mark:p])
+      log.data[len(log.data)-1].properties = append(log.data[len(log.data)-1].properties, Property{paramName,buffer.String()})
+      buffer.Reset()
+    }
 
     action timestamp {
       location = time.UTC

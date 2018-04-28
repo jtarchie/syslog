@@ -149,6 +149,22 @@ var _ = Describe("with a standard payload", func() {
 			Expect(log.StructureData()).To(HaveLen(0))
 			Expect(log.String()).To(BeEquivalentTo(payload))
 		})
+
+		It("allows character escaping", func() {
+			payload := []byte(`<29>50 2016-01-15T01:00:43Z hn S - - [my@id1 a="1" b="\"" c="\\" d="\]" e="\"There are \\many things here[1\]\""]`)
+			log, _, err := syslog.Parse(payload)
+			Expect(err).ToNot(HaveOccurred())
+			data := log.StructureData()[0]
+			Expect(data.ID()).To(BeEquivalentTo("my@id1"))
+			Expect(data.Properties()).To(BeEquivalentTo([]syslog.Property{
+				{"a", "1"},
+				{"b", `"`},
+				{"c", `\`},
+				{"d", `]`},
+				{"e", `"There are \many things here[1]"`},
+			}))
+			Expect(log.String()).To(BeEquivalentTo(payload))
+		})
 	})
 
 	Context("with a message", func() {
@@ -209,7 +225,6 @@ var _ = Describe("with a standard payload", func() {
 			Expect(log.String()).To(BeEquivalentTo(payload))
 		})
 	})
-
 })
 
 var _ = Describe("with a TCP payload", func() {

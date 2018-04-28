@@ -13,7 +13,9 @@
   msg         = (msg_any | msg_utf8) >mark %message;
 
   sd_name         = printusascii{1,32} -- ("=" | sp | "]" | 34 | '"');
-  param_value     = utf8_string >mark %paramvalue;
+  escaped_chars   = ( "\\" | "]" | '"');
+  escaped_state   = ( "\\" escaped_chars ) %escaped;
+  param_value     = ((utf8_string -- escaped_chars) escaped_state*)+ >mark %paramvalue;
   param_name      = sd_name >mark %paramname;
   sd_id           = sd_name >mark %sdid;
   sd_param        = param_name '="' param_value :>> '"';

@@ -5,8 +5,11 @@ package syslog
 import (
 	"bytes"
 	"fmt"
+	"strings"
 	"time"
 )
+
+var paramValueReplacer = strings.NewReplacer(`"`, `\"`, `]`, `\]`, `\`, `\\`)
 
 type Property struct {
 	Key   string
@@ -38,7 +41,7 @@ func (s structureElement) String() string {
 		buffer.WriteString(" ")
 		buffer.WriteString(property.Key)
 		buffer.WriteString(`="`)
-		buffer.WriteString(property.Value)
+		buffer.WriteString(paramValueReplacer.Replace(property.Value))
 		buffer.WriteString(`"`)
 	}
 	buffer.WriteString("]")
