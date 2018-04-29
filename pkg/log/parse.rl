@@ -1,9 +1,8 @@
 package syslog
 
 import (
-  "fmt"
   "time"
-  "bytes"
+  "errors"
 )
 
 %%{
@@ -11,17 +10,24 @@ import (
   write data;
 }%%
 
+var parseError = errors.New("could not parse message")
+
+const empty = ""
+
 func toString(a []byte) string {
   if len(a) == 1 && a[0] == '-' {
-    return ""
+    return empty
   }
   return string(a)
 }
 
 func atoi(a []byte) int {
-  var x int
-  for _, c := range a {
-    x = x * 10 + int(c - '0')
+  var x, i int
+loop:
+  x = x * 10 + int(a[i] - '0')
+  i++
+  if i < len(a) {
+    goto loop // avoid for loop so this function can be inlined
   }
   return x
 }
@@ -43,9 +49,9 @@ func Parse(data []byte) (*Log, int, error) {
     nanosecond int
   )
 
-  log := &Log{}
+  log := Log{}
   var location *time.Location
-  var buffer bytes.Buffer
+  var buffer []byte
 
   // set defaults for state machine parsing
   cs, p, pe, eof := 0, 0, len(data), len(data)
@@ -71,14 +77,14 @@ func Parse(data []byte) (*Log, int, error) {
     }
     action paramname  { paramName = string(data[mark:p]) }
     action escaped    {
-      buffer.Write(data[mark:p-2])
-      buffer.WriteByte(data[p-1])
+      buffer = append(buffer, data[mark:p-2]...)
+      buffer = append(buffer, data[p-1])
       mark = p
     }
     action paramvalue {
-      buffer.Write(data[mark:p])
-      log.data[len(log.data)-1].properties = append(log.data[len(log.data)-1].properties, Property{paramName,buffer.String()})
-      buffer.Reset()
+      buffer = append(buffer, data[mark:p]...)
+      log.data[len(log.data)-1].properties = append(log.data[len(log.data)-1].properties, Property{paramName,string(buffer)})
+      buffer = buffer[:0]
     }
 
     action timestamp {
@@ -99,12 +105,20 @@ func Parse(data []byte) (*Log, int, error) {
           )
         }
         nbytes := ( p - offset - 1 ) - ( mark + 19 )
-        for i := mark + 20; i < p-offset; i++ {
-          nanosecond = nanosecond*10 + int(data[i]-'0')
-        }
-        for i := 0; i < 9-nbytes; i++ {
-          nanosecond *= 10
-        }
+        i := mark + 20
+        first:
+          if i < p-offset {
+            nanosecond = nanosecond*10 + int(data[i]-'0')
+            i++
+            goto first
+          }
+        i = 0
+        second:
+          if i < 9-nbytes {
+            nanosecond *= 10
+            i++
+            goto second
+          }
       }
 
       log.timestamp = time.Date(
@@ -126,8 +140,8 @@ func Parse(data []byte) (*Log, int, error) {
   }%%
 
   if cs < syslog_rfc5424_first_final {
-    return nil, 0, fmt.Errorf("error in msg at pos %d: %s", p, data)
+    return nil, 0, parseError
   }
 
-  return log, p, nil
+  return &log, p, nil
 }

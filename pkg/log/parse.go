@@ -3,13 +3,12 @@
 package syslog
 
 import (
-  "fmt"
   "time"
-  "bytes"
+  "errors"
 )
 
 
-//line parse.go:13
+//line parse.go:12
 const syslog_rfc5424_start int = 1
 const syslog_rfc5424_first_final int = 586
 const syslog_rfc5424_error int = 0
@@ -17,20 +16,27 @@ const syslog_rfc5424_error int = 0
 const syslog_rfc5424_en_main int = 1
 
 
-//line parse.rl:12
+//line parse.rl:11
 
+
+var parseError = errors.New("could not parse message")
+
+const empty = ""
 
 func toString(a []byte) string {
   if len(a) == 1 && a[0] == '-' {
-    return ""
+    return empty
   }
   return string(a)
 }
 
 func atoi(a []byte) int {
-  var x int
-  for _, c := range a {
-    x = x * 10 + int(c - '0')
+  var x, i int
+loop:
+  x = x * 10 + int(a[i] - '0')
+  i++
+  if i < len(a) {
+    goto loop // avoid for loop so this function can be inlined
   }
   return x
 }
@@ -52,9 +58,9 @@ func Parse(data []byte) (*Log, int, error) {
     nanosecond int
   )
 
-  log := &Log{}
+  log := Log{}
   var location *time.Location
-  var buffer bytes.Buffer
+  var buffer []byte
 
   // set defaults for state machine parsing
   cs, p, pe, eof := 0, 0, len(data), len(data)
@@ -64,12 +70,12 @@ func Parse(data []byte) (*Log, int, error) {
 
   // taken directly from https://tools.ietf.org/html/rfc5424#page-8
   
-//line parse.go:68
+//line parse.go:74
 	{
 	cs = syslog_rfc5424_start
 	}
 
-//line parse.go:73
+//line parse.go:79
 	{
 	if p == pe {
 		goto _test_eof
@@ -1270,7 +1276,7 @@ st_case_0:
 		cs = 0
 		goto _out
 tr0:
-//line parse.rl:58
+//line parse.rl:64
  mark = p 
 	goto st2
 	st2:
@@ -1278,7 +1284,7 @@ tr0:
 			goto _test_eof2
 		}
 	st_case_2:
-//line parse.go:1282
+//line parse.go:1288
 		if data[p] == 32 {
 			goto tr3
 		}
@@ -1287,7 +1293,7 @@ tr0:
 		}
 		goto st0
 tr3:
-//line parse.rl:59
+//line parse.rl:65
  pe, eof = atoi(data[mark:p]) + (p-mark) + 1, atoi(data[mark:p]) + (p-mark) + 1 
 	goto st3
 	st3:
@@ -1295,7 +1301,7 @@ tr3:
 			goto _test_eof3
 		}
 	st_case_3:
-//line parse.go:1299
+//line parse.go:1305
 		if data[p] == 60 {
 			goto st4
 		}
@@ -1310,7 +1316,7 @@ tr3:
 		}
 		goto st0
 tr5:
-//line parse.rl:58
+//line parse.rl:64
  mark = p 
 	goto st5
 	st5:
@@ -1318,7 +1324,7 @@ tr5:
 			goto _test_eof5
 		}
 	st_case_5:
-//line parse.go:1322
+//line parse.go:1328
 		if data[p] == 62 {
 			goto tr7
 		}
@@ -1348,7 +1354,7 @@ tr5:
 		}
 		goto st0
 tr7:
-//line parse.rl:61
+//line parse.rl:67
  log.priority = atoi(data[mark:p]) 
 	goto st8
 	st8:
@@ -1356,13 +1362,13 @@ tr7:
 			goto _test_eof8
 		}
 	st_case_8:
-//line parse.go:1360
+//line parse.go:1366
 		if 49 <= data[p] && data[p] <= 57 {
 			goto tr9
 		}
 		goto st0
 tr9:
-//line parse.rl:58
+//line parse.rl:64
  mark = p 
 	goto st9
 	st9:
@@ -1370,7 +1376,7 @@ tr9:
 			goto _test_eof9
 		}
 	st_case_9:
-//line parse.go:1374
+//line parse.go:1380
 		if data[p] == 32 {
 			goto tr10
 		}
@@ -1379,7 +1385,7 @@ tr9:
 		}
 		goto st0
 tr10:
-//line parse.rl:60
+//line parse.rl:66
  log.version = atoi(data[mark:p]) 
 	goto st10
 	st10:
@@ -1387,7 +1393,7 @@ tr10:
 			goto _test_eof10
 		}
 	st_case_10:
-//line parse.go:1391
+//line parse.go:1397
 		if data[p] == 45 {
 			goto st11
 		}
@@ -1405,7 +1411,7 @@ tr10:
 		}
 		goto st0
 tr589:
-//line parse.rl:84
+//line parse.rl:90
 
       location = time.UTC
       if data[mark+19] == '.' {
@@ -1424,12 +1430,20 @@ tr589:
           )
         }
         nbytes := ( p - offset - 1 ) - ( mark + 19 )
-        for i := mark + 20; i < p-offset; i++ {
-          nanosecond = nanosecond*10 + int(data[i]-'0')
-        }
-        for i := 0; i < 9-nbytes; i++ {
-          nanosecond *= 10
-        }
+        i := mark + 20
+        first:
+          if i < p-offset {
+            nanosecond = nanosecond*10 + int(data[i]-'0')
+            i++
+            goto first
+          }
+        i = 0
+        second:
+          if i < 9-nbytes {
+            nanosecond *= 10
+            i++
+            goto second
+          }
       }
 
       log.timestamp = time.Date(
@@ -1449,13 +1463,13 @@ tr589:
 			goto _test_eof12
 		}
 	st_case_12:
-//line parse.go:1453
+//line parse.go:1467
 		if 33 <= data[p] && data[p] <= 126 {
 			goto tr15
 		}
 		goto st0
 tr15:
-//line parse.rl:58
+//line parse.rl:64
  mark = p 
 	goto st13
 	st13:
@@ -1463,7 +1477,7 @@ tr15:
 			goto _test_eof13
 		}
 	st_case_13:
-//line parse.go:1467
+//line parse.go:1481
 		if data[p] == 32 {
 			goto tr16
 		}
@@ -1472,7 +1486,7 @@ tr15:
 		}
 		goto st0
 tr16:
-//line parse.rl:62
+//line parse.rl:68
  log.hostname = toString(data[mark:p]) 
 	goto st14
 	st14:
@@ -1480,13 +1494,13 @@ tr16:
 			goto _test_eof14
 		}
 	st_case_14:
-//line parse.go:1484
+//line parse.go:1498
 		if 33 <= data[p] && data[p] <= 126 {
 			goto tr18
 		}
 		goto st0
 tr18:
-//line parse.rl:58
+//line parse.rl:64
  mark = p 
 	goto st15
 	st15:
@@ -1494,7 +1508,7 @@ tr18:
 			goto _test_eof15
 		}
 	st_case_15:
-//line parse.go:1498
+//line parse.go:1512
 		if data[p] == 32 {
 			goto tr19
 		}
@@ -1503,7 +1517,7 @@ tr18:
 		}
 		goto st0
 tr19:
-//line parse.rl:63
+//line parse.rl:69
  log.appname = toString(data[mark:p]) 
 	goto st16
 	st16:
@@ -1511,13 +1525,13 @@ tr19:
 			goto _test_eof16
 		}
 	st_case_16:
-//line parse.go:1515
+//line parse.go:1529
 		if 33 <= data[p] && data[p] <= 126 {
 			goto tr21
 		}
 		goto st0
 tr21:
-//line parse.rl:58
+//line parse.rl:64
  mark = p 
 	goto st17
 	st17:
@@ -1525,7 +1539,7 @@ tr21:
 			goto _test_eof17
 		}
 	st_case_17:
-//line parse.go:1529
+//line parse.go:1543
 		if data[p] == 32 {
 			goto tr22
 		}
@@ -1534,7 +1548,7 @@ tr21:
 		}
 		goto st0
 tr22:
-//line parse.rl:64
+//line parse.rl:70
  log.procID = toString(data[mark:p]) 
 	goto st18
 	st18:
@@ -1542,13 +1556,13 @@ tr22:
 			goto _test_eof18
 		}
 	st_case_18:
-//line parse.go:1546
+//line parse.go:1560
 		if 33 <= data[p] && data[p] <= 126 {
 			goto tr24
 		}
 		goto st0
 tr24:
-//line parse.rl:58
+//line parse.rl:64
  mark = p 
 	goto st19
 	st19:
@@ -1556,7 +1570,7 @@ tr24:
 			goto _test_eof19
 		}
 	st_case_19:
-//line parse.go:1560
+//line parse.go:1574
 		if data[p] == 32 {
 			goto tr25
 		}
@@ -1565,7 +1579,7 @@ tr24:
 		}
 		goto st0
 tr25:
-//line parse.rl:65
+//line parse.rl:71
  log.msgID = toString(data[mark:p]) 
 	goto st20
 	st20:
@@ -1573,7 +1587,7 @@ tr25:
 			goto _test_eof20
 		}
 	st_case_20:
-//line parse.go:1577
+//line parse.go:1591
 		switch data[p] {
 		case 45:
 			goto st586
@@ -1597,7 +1611,7 @@ tr25:
 	st_case_587:
 		goto tr598
 tr598:
-//line parse.rl:58
+//line parse.rl:64
  mark = p 
 	goto st588
 	st588:
@@ -1605,7 +1619,7 @@ tr598:
 			goto _test_eof588
 		}
 	st_case_588:
-//line parse.go:1609
+//line parse.go:1623
 		goto st588
 	st21:
 		if p++; p == pe {
@@ -1629,7 +1643,7 @@ tr598:
 		}
 		goto st0
 tr29:
-//line parse.rl:58
+//line parse.rl:64
  mark = p 
 	goto st22
 	st22:
@@ -1637,7 +1651,7 @@ tr29:
 			goto _test_eof22
 		}
 	st_case_22:
-//line parse.go:1641
+//line parse.go:1655
 		switch data[p] {
 		case 32:
 			goto tr30
@@ -1656,7 +1670,7 @@ tr29:
 		}
 		goto st0
 tr30:
-//line parse.rl:66
+//line parse.rl:72
 
       log.data = append(log.data, structureElement{
         id: string(data[mark:p]),
@@ -1669,7 +1683,7 @@ tr30:
 			goto _test_eof23
 		}
 	st_case_23:
-//line parse.go:1673
+//line parse.go:1687
 		if data[p] == 33 {
 			goto tr33
 		}
@@ -1687,7 +1701,7 @@ tr30:
 		}
 		goto st0
 tr33:
-//line parse.rl:58
+//line parse.rl:64
  mark = p 
 	goto st24
 	st24:
@@ -1695,7 +1709,7 @@ tr33:
 			goto _test_eof24
 		}
 	st_case_24:
-//line parse.go:1699
+//line parse.go:1713
 		switch data[p] {
 		case 33:
 			goto st25
@@ -2321,7 +2335,7 @@ tr33:
 		}
 		goto st0
 tr35:
-//line parse.rl:72
+//line parse.rl:78
  paramName = string(data[mark:p]) 
 	goto st56
 	st56:
@@ -2329,7 +2343,7 @@ tr35:
 			goto _test_eof56
 		}
 	st_case_56:
-//line parse.go:2333
+//line parse.go:2347
 		if data[p] == 34 {
 			goto st57
 		}
@@ -2349,14 +2363,14 @@ tr35:
 		}
 		goto tr67
 tr67:
-//line parse.rl:58
+//line parse.rl:64
  mark = p 
 	goto st58
 tr76:
-//line parse.rl:73
+//line parse.rl:79
 
-      buffer.Write(data[mark:p-2])
-      buffer.WriteByte(data[p-1])
+      buffer = append(buffer, data[mark:p-2]...)
+      buffer = append(buffer, data[p-1])
       mark = p
     
 	goto st58
@@ -2365,7 +2379,7 @@ tr76:
 			goto _test_eof58
 		}
 	st_case_58:
-//line parse.go:2369
+//line parse.go:2383
 		switch data[p] {
 		case 34:
 			goto tr71
@@ -2376,35 +2390,35 @@ tr76:
 		}
 		goto st58
 tr68:
-//line parse.rl:58
+//line parse.rl:64
  mark = p 
-//line parse.rl:78
+//line parse.rl:84
 
-      buffer.Write(data[mark:p])
-      log.data[len(log.data)-1].properties = append(log.data[len(log.data)-1].properties, Property{paramName,buffer.String()})
-      buffer.Reset()
+      buffer = append(buffer, data[mark:p]...)
+      log.data[len(log.data)-1].properties = append(log.data[len(log.data)-1].properties, Property{paramName,string(buffer)})
+      buffer = buffer[:0]
     
 	goto st59
 tr71:
-//line parse.rl:78
+//line parse.rl:84
 
-      buffer.Write(data[mark:p])
-      log.data[len(log.data)-1].properties = append(log.data[len(log.data)-1].properties, Property{paramName,buffer.String()})
-      buffer.Reset()
+      buffer = append(buffer, data[mark:p]...)
+      log.data[len(log.data)-1].properties = append(log.data[len(log.data)-1].properties, Property{paramName,string(buffer)})
+      buffer = buffer[:0]
     
 	goto st59
 tr77:
-//line parse.rl:73
+//line parse.rl:79
 
-      buffer.Write(data[mark:p-2])
-      buffer.WriteByte(data[p-1])
+      buffer = append(buffer, data[mark:p-2]...)
+      buffer = append(buffer, data[p-1])
       mark = p
     
-//line parse.rl:78
+//line parse.rl:84
 
-      buffer.Write(data[mark:p])
-      log.data[len(log.data)-1].properties = append(log.data[len(log.data)-1].properties, Property{paramName,buffer.String()})
-      buffer.Reset()
+      buffer = append(buffer, data[mark:p]...)
+      log.data[len(log.data)-1].properties = append(log.data[len(log.data)-1].properties, Property{paramName,string(buffer)})
+      buffer = buffer[:0]
     
 	goto st59
 	st59:
@@ -2412,7 +2426,7 @@ tr77:
 			goto _test_eof59
 		}
 	st_case_59:
-//line parse.go:2416
+//line parse.go:2430
 		switch data[p] {
 		case 32:
 			goto st23
@@ -2421,7 +2435,7 @@ tr77:
 		}
 		goto st0
 tr32:
-//line parse.rl:66
+//line parse.rl:72
 
       log.data = append(log.data, structureElement{
         id: string(data[mark:p]),
@@ -2434,7 +2448,7 @@ tr32:
 			goto _test_eof589
 		}
 	st_case_589:
-//line parse.go:2438
+//line parse.go:2452
 		switch data[p] {
 		case 32:
 			goto st587
@@ -2443,14 +2457,14 @@ tr32:
 		}
 		goto st0
 tr69:
-//line parse.rl:58
+//line parse.rl:64
  mark = p 
 	goto st60
 tr78:
-//line parse.rl:73
+//line parse.rl:79
 
-      buffer.Write(data[mark:p-2])
-      buffer.WriteByte(data[p-1])
+      buffer = append(buffer, data[mark:p-2]...)
+      buffer = append(buffer, data[p-1])
       mark = p
     
 	goto st60
@@ -2459,7 +2473,7 @@ tr78:
 			goto _test_eof60
 		}
 	st_case_60:
-//line parse.go:2463
+//line parse.go:2477
 		if data[p] == 34 {
 			goto st61
 		}
@@ -8650,7 +8664,7 @@ tr78:
 		}
 		goto st0
 tr13:
-//line parse.rl:58
+//line parse.rl:64
  mark = p 
 	goto st552
 	st552:
@@ -8658,7 +8672,7 @@ tr13:
 			goto _test_eof552
 		}
 	st_case_552:
-//line parse.go:8662
+//line parse.go:8676
 		if 48 <= data[p] && data[p] <= 57 {
 			goto st553
 		}
@@ -9609,26 +9623,26 @@ tr13:
 	if p == eof {
 		switch cs {
 		case 588:
-//line parse.rl:121
+//line parse.rl:135
  log.message = string(data[mark:p]) 
 		case 587:
-//line parse.rl:58
+//line parse.rl:64
  mark = p 
-//line parse.rl:121
+//line parse.rl:135
  log.message = string(data[mark:p]) 
-//line parse.go:9620
+//line parse.go:9634
 		}
 	}
 
 	_out: {}
 	}
 
-//line parse.rl:126
+//line parse.rl:140
 
 
   if cs < syslog_rfc5424_first_final {
-    return nil, 0, fmt.Errorf("error in msg at pos %d: %s", p, data)
+    return nil, 0, parseError
   }
 
-  return log, p, nil
+  return &log, p, nil
 }
