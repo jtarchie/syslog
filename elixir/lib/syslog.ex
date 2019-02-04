@@ -1,64 +1,31 @@
 defmodule Syslog do
-  import NimbleParsec
   use Bitwise
 
-  defmodule Log do
-    defstruct [
-      :version,
-      :severity,
-      :facility,
-      :priority,
-      :timestamp
-    ]
+  defmodule Property do
+    defstruct [:key, :value]
   end
 
-  date =
-    integer(4)
-    |> ignore(string("-"))
-    |> integer(2)
-    |> ignore(string("-"))
-    |> integer(2)
-
-  time =
-    integer(2)
-    |> ignore(string(":"))
-    |> integer(2)
-    |> ignore(string(":"))
-    |> integer(2)
-    |> optional(string("Z"))
-
-  datetime = date |> ignore(string("T")) |> concat(time) |> tag(:datetime)
-
-  prival = integer(min: 1, max: 3) |> tag(:prival)
-  pri = string("<") |> concat(prival) |> string(">")
-
-  version =
-    ascii_char([?1..?9])
-    |> optional(ascii_char([?0..?9]))
-    |> optional(ascii_char([?0..?9]))
-    |> tag(:version)
-
-  defparsec(:message, pri |> concat(version) |> string(" ") |> concat(datetime))
-
   def parse(msg) do
-    {:ok, val, _, _, _, _} = message(msg)
+    {:ok, val, _, _, _, _} = SyslogParser.message(msg)
 
-    log = parse1(%Log{}, val)
+    IO.inspect(val)
+
+    log = build(%SyslogLog{}, val)
     {log, 0, nil}
   end
 
-  defp parse1(log, [{:version, version} | p]) do
+  defp build(log, [{:version, version} | p]) do
     log = %{log | version: :erlang.list_to_integer(version)}
-    parse1(log, p)
+    build(log, p)
   end
 
-  defp parse1(log, [{:prival, [prival]} | p]) do
+  defp build(log, [{:prival, [prival]} | p]) do
     log = %{log | severity: prival &&& 7, facility: prival >>> 3, priority: prival}
-    parse1(log, p)
+    build(log, p)
   end
 
-  defp parse1(log, [{:datetime, datetime} | p]) do
-    [year, month, day, hour, minute, second] = datetime
+  defp build(log, [{:datetime, datetime} | p]) do
+    [year, month, day, hour, minute, second, _, _, _] = datetime
 
     log = %{
       log
@@ -76,14 +43,39 @@ defmodule Syslog do
         }
     }
 
-    parse1(log, p)
+    build(log, p)
   end
 
-  defp parse1(log, [_ | p]) do
-    parse1(log, p)
+  defp build(log, [{:hostname, [hostname]} | p]) do
+    log = %{log | hostname: hostname}
+    build(log, p)
   end
 
-  defp parse1(log, []) do
+  defp build(log, [{:app_name, [app_name]} | p]) do
+    log = %{log | app_name: app_name}
+    build(log, p)
+  end
+
+  defp build(log, [{:proc_id, [proc_id]} | p]) do
+    log = %{log | proc_id: proc_id}
+    build(log, p)
+  end
+
+  defp build(log, [{:msg_id, [msg_id]} | p]) do
+    log = %{log | msg_id: msg_id}
+    build(log, p)
+  end
+
+  defp build(log, [{:message, [message]} | p]) do
+    log = %{log | message: message}
+    build(log, p)
+  end
+
+  defp build(log, [_ | p]) do
+    build(log, p)
+  end
+
+  defp build(log, []) do
     log
   end
 end

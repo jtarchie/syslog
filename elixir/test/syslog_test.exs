@@ -2,8 +2,7 @@ defmodule SyslogTest do
   use ExUnit.Case
   doctest Syslog
 
-  # mymachine.example.com su 12345 98765 [exampleSDID@32473 iut="3" eventSource="Application" eventID="1011"] 'su root' failed for lonvick on /dev/pts/8)
-  @valid_message ~s(<34>1 2003-10-11T22:14:15.003Z)
+  @valid_message ~s(<34>1 2003-10-11T22:14:15.003Z mymachine.example.com su 12345 98765 [exampleSDID@32473 iut="3" eventSource="Application" eventID="1011"] 'su root' failed for lonvick on /dev/pts/8)
 
   test "parses a valid message" do
     {_, offset, err} = Syslog.parse(@valid_message)
@@ -11,19 +10,19 @@ defmodule SyslogTest do
     assert err == nil
   end
 
-  test "parses the version" do
+  test "sets the version" do
     {log, _, _} = Syslog.parse(@valid_message)
     assert log.version == 1
   end
 
-  test "parses priority" do
+  test "sets priority (and decoded fields)" do
     {log, _, _} = Syslog.parse(@valid_message)
     assert log.severity == 2
     assert log.facility == 4
     assert log.priority == 34
   end
 
-  test "parses timestamp" do
+  test "returns a valid date object" do
     {log, _, _} = Syslog.parse(@valid_message)
 
     assert log.timestamp == %DateTime{
@@ -38,5 +37,42 @@ defmodule SyslogTest do
              zone_abbr: "UTC",
              std_offset: 0
            }
+  end
+
+  test "sets the hostname" do
+    {log, _, _} = Syslog.parse(@valid_message)
+    assert log.hostname == "mymachine.example.com"
+  end
+
+  test "sets the app name" do
+    {log, _, _} = Syslog.parse(@valid_message)
+    assert log.app_name == "su"
+  end
+
+  test "sets the proc id" do
+    {log, _, _} = Syslog.parse(@valid_message)
+    assert log.proc_id == "12345"
+  end
+
+  test "sets the log id" do
+    {log, _, _} = Syslog.parse(@valid_message)
+    assert log.msg_id == "98765"
+  end
+
+  test "sets structure data" do
+    {log, _, _} = Syslog.parse(@valid_message)
+    [sd | []] = log.structure_data
+    assert sd.id == "exampleSDID@32473"
+
+    assert sd.properties == [
+             %Syslog.Property{key: "iut", value: "3"},
+             %Syslog.Property{key: "eventSource", value: "Application"},
+             %Syslog.Property{key: "eventID", value: "1011"}
+           ]
+  end
+
+  test "sets the message" do
+    {log, _, _} = Syslog.parse(@valid_message)
+    assert log.message == "'su root' failed for lonvick on /dev/pts/8"
   end
 end
