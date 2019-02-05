@@ -79,6 +79,10 @@ defmodule Syslog do
     build(log, p)
   end
 
+  defp build(log, [_ | p]) do
+    build(log, p)
+  end
+
   defp build(log, []) do
     log
   end

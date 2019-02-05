@@ -32,28 +32,28 @@ defmodule SyslogParser do
 
   hostname =
     choice([
-      string("-"),
+      ignore(string("-")),
       ascii_string([?!..?~], max: 255)
     ])
     |> tag(:hostname)
 
   app_name =
     choice([
-      string("-"),
+      ignore(string("-")),
       ascii_string([?!..?~], max: 48)
     ])
     |> tag(:app_name)
 
   proc_id =
     choice([
-      string("-"),
+      ignore(string("-")),
       ascii_string([?!..?~], max: 128)
     ])
     |> tag(:proc_id)
 
   msg_id =
     choice([
-      string("-"),
+      ignore(string("-")),
       ascii_string([?!..?~], max: 32)
     ])
     |> tag(:msg_id)
@@ -104,7 +104,11 @@ defmodule SyslogParser do
     header
     |> ignore(string(" "))
     |> concat(structured_data)
-    |> ignore(string(" "))
-    |> concat(message)
+    |> concat(
+      optional(
+        ignore(string(" "))
+        |> concat(message)
+      )
+    )
   )
 end

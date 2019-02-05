@@ -75,4 +75,14 @@ defmodule SyslogTest do
     {log, _, _} = Syslog.parse(@valid_message)
     assert log.message == "'su root' failed for lonvick on /dev/pts/8"
   end
+
+  test "sets values to null when set to '-'" do
+    {log, _, _} = Syslog.parse(~s(<34>1 2003-10-11T22:14:15.003Z - - - - -))
+    assert log.hostname == nil
+    assert log.app_name == nil
+    assert log.proc_id == nil
+    assert log.msg_id == nil
+    assert log.structure_data == []
+    assert log.message == nil
+  end
 end
