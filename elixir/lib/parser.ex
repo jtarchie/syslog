@@ -22,7 +22,7 @@ defmodule SyslogParser do
   datetime = date |> ignore(string("T")) |> concat(time) |> tag(:datetime)
 
   prival = integer(min: 1, max: 3) |> tag(:prival)
-  pri = string("<") |> concat(prival) |> string(">")
+  pri = ignore(string("<")) |> concat(prival) |> ignore(string(">"))
 
   version =
     ascii_char([?1..?9])
@@ -61,32 +61,31 @@ defmodule SyslogParser do
   header =
     pri
     |> concat(version)
-    |> string(" ")
+    |> ignore(string(" "))
     |> concat(datetime)
-    |> string(" ")
+    |> ignore(string(" "))
     |> concat(hostname)
-    |> string(" ")
+    |> ignore(string(" "))
     |> concat(app_name)
-    |> string(" ")
+    |> ignore(string(" "))
     |> concat(proc_id)
-    |> string(" ")
+    |> ignore(string(" "))
     |> concat(msg_id)
 
-  sd_name =
-    ascii_string([not: ?=, not: ?\s, not: ?], not: ?"], max: 32)
+  sd_name = ascii_string([not: ?=, not: ?\s, not: ?], not: ?"], max: 32)
 
   sd_param =
     sd_name
-    |> string("=\"")
+    |> ignore(string("=\""))
     |> concat(sd_name)
-    |> string("\"")
+    |> ignore(string("\""))
     |> tag(:sd_param)
 
   sd_element =
-    string("[")
+    ignore(string("["))
     |> concat(sd_name |> tag(:sd_id))
-    |> repeat(string(" ") |> concat(sd_param))
-    |> string("]")
+    |> repeat(ignore(string(" ")) |> concat(sd_param))
+    |> ignore(string("]"))
     |> tag(:sd_element)
 
   structured_data =
@@ -102,6 +101,10 @@ defmodule SyslogParser do
 
   defparsec(
     :message,
-    header |> string(" ") |> concat(structured_data) |> string(" ") |> concat(message)
+    header
+    |> ignore(string(" "))
+    |> concat(structured_data)
+    |> ignore(string(" "))
+    |> concat(message)
   )
 end

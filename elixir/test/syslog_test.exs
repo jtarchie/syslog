@@ -61,13 +61,13 @@ defmodule SyslogTest do
 
   test "sets structure data" do
     {log, _, _} = Syslog.parse(@valid_message)
-    [sd | []] = log.structure_data
+    [sd] = log.structure_data
     assert sd.id == "exampleSDID@32473"
 
     assert sd.properties == [
-             %Syslog.Property{key: "iut", value: "3"},
+             %Syslog.Property{key: "eventID", value: "1011"},
              %Syslog.Property{key: "eventSource", value: "Application"},
-             %Syslog.Property{key: "eventID", value: "1011"}
+             %Syslog.Property{key: "iut", value: "3"}
            ]
   end
 

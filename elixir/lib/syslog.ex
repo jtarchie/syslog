@@ -1,6 +1,10 @@
 defmodule Syslog do
   use Bitwise
 
+  defmodule Element do
+    defstruct [:id, :properties]
+  end
+
   defmodule Property do
     defstruct [:key, :value]
   end
@@ -8,9 +12,7 @@ defmodule Syslog do
   def parse(msg) do
     {:ok, val, _, _, _, _} = SyslogParser.message(msg)
 
-    IO.inspect(val)
-
-    log = build(%SyslogLog{}, val)
+    log = build(%SyslogLog{structure_data: []}, val)
     {log, 0, nil}
   end
 
@@ -71,11 +73,27 @@ defmodule Syslog do
     build(log, p)
   end
 
-  defp build(log, [_ | p]) do
+  defp build(log, [{:sd_element, sd_element} | p]) do
+    element = build_sd_element(%Element{properties: []}, sd_element)
+    log = %{log | structure_data: [element] ++ log.structure_data}
     build(log, p)
   end
 
   defp build(log, []) do
     log
+  end
+
+  defp build_sd_element(element, [{:sd_id, [id]} | properties]) do
+    element = %{element | id: id}
+    build_sd_element(element, properties)
+  end
+
+  defp build_sd_element(element, [{:sd_param, [key, value]} | properties]) do
+    element = %{element | properties: [%Property{key: key, value: value}] ++ element.properties}
+    build_sd_element(element, properties)
+  end
+
+  defp build_sd_element(element, []) do
+    element
   end
 end
