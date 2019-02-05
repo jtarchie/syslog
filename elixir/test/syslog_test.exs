@@ -85,4 +85,14 @@ defmodule SyslogTest do
     assert log.structure_data == []
     assert log.message == nil
   end
+
+  test "allow escaped characters within structured data values" do
+    {log, _, _} =
+      Syslog.parse(
+        ~s(<29>50 2016-01-15T01:00:43Z hn S - - [my@id1 a="1" b="\"" c="\\" d="\]" e="\"There are \\many things here[1\]\""])
+      )
+
+    [sd] = log.structure_data
+    assert sd.id == "my@id"
+  end
 end

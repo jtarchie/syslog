@@ -15,8 +15,8 @@ defmodule SyslogParser do
     |> ignore(string(":"))
     |> integer(2)
     |> choice([
-      optional(string(".") |> ascii_string([?0..?9], max: 6) |> optional(string("Z"))),
-      optional(string("Z"))
+      string(".") |> ascii_string([?0..?9], max: 6) |> optional(string("Z")),
+      string("Z")
     ])
 
   datetime = date |> ignore(string("T")) |> concat(time) |> tag(:datetime)
