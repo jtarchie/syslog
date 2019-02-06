@@ -119,8 +119,13 @@ defmodule SyslogTest do
     assert DateTime.to_iso8601(log.timestamp) == "1985-04-12T23:20:50.52Z"
   end
 
-  test "date can be null" do
+  test "date can be nil" do
     {log, _, _} = Syslog.parse(~S(<34>1 - - su - - - 'su root' failed for lonvick on /dev/pts/8))
+    assert log.timestamp == nil
+  end
+
+  test "ignores unparseable timestamps" do
+    {log, _, _} = Syslog.parse(~S(<34>1 asdfasdfasdf - su - - - 'su root' failed for lonvick on /dev/pts/8))
     assert log.timestamp == nil
   end
 end
