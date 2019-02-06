@@ -103,4 +103,13 @@ defmodule SyslogTest do
              %Syslog.Property{key: "a", value: "1"}
            ]
   end
+
+  test "supports multiple sd elements" do
+    {log, _, _} =
+      Syslog.parse(~S(<29>50 2016-01-15T01:00:43Z hn S - - [my@id1 k="v"][my@id2 c="val"]))
+
+    [sd1, sd2] = log.structure_data
+    assert sd1.id == "my@id2"
+    assert sd2.id == "my@id1"
+  end
 end
