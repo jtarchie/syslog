@@ -74,11 +74,24 @@ defmodule SyslogParser do
 
   sd_name = ascii_string([not: ?=, not: ?\s, not: ?], not: ?"], max: 32)
 
+  param_value =
+    ignore(ascii_char([?"]))
+    |> repeat(
+      lookahead_not(ascii_char([?"]))
+      |> choice([
+        ~S(\") |> string |> replace("\""),
+        ~S(\\) |> string |> replace("\\"),
+        ~S(\]) |> string |> replace("]"),
+        utf8_char([])
+      ])
+    )
+    |> ignore(ascii_char([?"]))
+    |> reduce({List, :to_string, []})
+
   sd_param =
     sd_name
-    |> ignore(string("=\""))
-    |> concat(sd_name)
-    |> ignore(string("\""))
+    |> ignore(string("="))
+    |> concat(param_value)
     |> tag(:sd_param)
 
   sd_element =

@@ -2,7 +2,7 @@ defmodule SyslogTest do
   use ExUnit.Case
   doctest Syslog
 
-  @valid_message ~s(<34>1 2003-10-11T22:14:15.003Z mymachine.example.com su 12345 98765 [exampleSDID@32473 iut="3" eventSource="Application" eventID="1011"] 'su root' failed for lonvick on /dev/pts/8)
+  @valid_message ~S(<34>1 2003-10-11T22:14:15.003Z mymachine.example.com su 12345 98765 [exampleSDID@32473 iut="3" eventSource="Application" eventID="1011"] 'su root' failed for lonvick on /dev/pts/8)
 
   test "parses a valid message" do
     {_, offset, err} = Syslog.parse(@valid_message)
@@ -77,7 +77,7 @@ defmodule SyslogTest do
   end
 
   test "sets values to null when set to '-'" do
-    {log, _, _} = Syslog.parse(~s(<34>1 2003-10-11T22:14:15.003Z - - - - -))
+    {log, _, _} = Syslog.parse(~S(<34>1 2003-10-11T22:14:15.003Z - - - - -))
     assert log.hostname == nil
     assert log.app_name == nil
     assert log.proc_id == nil
@@ -89,10 +89,18 @@ defmodule SyslogTest do
   test "allow escaped characters within structured data values" do
     {log, _, _} =
       Syslog.parse(
-        ~s(<29>50 2016-01-15T01:00:43Z hn S - - [my@id1 a="1" b="\"" c="\\" d="\]" e="\"There are \\many things here[1\]\""])
+        ~S(<29>50 2016-01-15T01:00:43Z hn S - - [my@id1 a="1" b="\"" c="\\" d="\]" e="\"There are \\many things here[1\]\""])
       )
 
     [sd] = log.structure_data
-    assert sd.id == "my@id"
+    assert sd.id == "my@id1"
+
+    assert sd.properties == [
+             %Syslog.Property{key: "e", value: ~S("There are \many things here[1]")},
+             %Syslog.Property{key: "d", value: "]"},
+             %Syslog.Property{key: "c", value: "\\"},
+             %Syslog.Property{key: "b", value: "\""},
+             %Syslog.Property{key: "a", value: "1"}
+           ]
   end
 end
