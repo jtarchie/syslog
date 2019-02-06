@@ -25,18 +25,7 @@ defmodule SyslogTest do
   test "returns a valid date object" do
     {log, _, _} = Syslog.parse(@valid_message)
 
-    assert log.timestamp == %DateTime{
-             year: 2003,
-             month: 10,
-             day: 11,
-             hour: 22,
-             minute: 14,
-             second: 15,
-             utc_offset: 0,
-             time_zone: "Etc/UTC",
-             zone_abbr: "UTC",
-             std_offset: 0
-           }
+    assert DateTime.to_iso8601(log.timestamp) == "2003-10-11T22:14:15.003Z"
   end
 
   test "sets the hostname" do
@@ -111,5 +100,27 @@ defmodule SyslogTest do
     [sd1, sd2] = log.structure_data
     assert sd1.id == "my@id2"
     assert sd2.id == "my@id1"
+  end
+
+  test "example timestamps from the RFC can be parsed" do
+    {log, _, _} = Syslog.parse(~S(<34>1 2003-10-11T22:14:15.00003Z - - - - -))
+    assert DateTime.to_iso8601(log.timestamp) == "2003-10-11T22:14:15.00003Z"
+
+    {log, _, _} = Syslog.parse(~S(<34>1 1985-04-12T23:20:50.52Z - - - - -))
+    assert DateTime.to_iso8601(log.timestamp) == "1985-04-12T23:20:50.52Z"
+
+    {log, _, _} = Syslog.parse(~S(<34>1 1985-04-12T23:20:50.52+00:00 - - - - -))
+    assert DateTime.to_iso8601(log.timestamp) == "1985-04-12T23:20:50.52Z"
+
+    {log, _, _} = Syslog.parse(~S(<34>1 1985-04-12T23:20:50.52Z - - - - -))
+    assert DateTime.to_iso8601(log.timestamp) == "1985-04-12T23:20:50.52Z"
+
+    {log, _, _} = Syslog.parse(~S(<34>1 1985-04-12T23:20:50.52Z - - - - -))
+    assert DateTime.to_iso8601(log.timestamp) == "1985-04-12T23:20:50.52Z"
+  end
+
+  test "date can be null" do
+    {log, _, _} = Syslog.parse(~S(<34>1 - - su - - - 'su root' failed for lonvick on /dev/pts/8))
+    assert log.timestamp == nil
   end
 end

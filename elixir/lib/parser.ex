@@ -1,25 +1,12 @@
 defmodule SyslogParser do
   import NimbleParsec
 
-  date =
-    integer(4)
-    |> ignore(string("-"))
-    |> integer(2)
-    |> ignore(string("-"))
-    |> integer(2)
-
-  time =
-    integer(2)
-    |> ignore(string(":"))
-    |> integer(2)
-    |> ignore(string(":"))
-    |> integer(2)
-    |> choice([
-      string(".") |> ascii_string([?0..?9], max: 6) |> optional(string("Z")),
-      string("Z")
+  datetime =
+    choice([
+      string("-"),
+      ascii_string([not: ?\s], min: 1)
     ])
-
-  datetime = date |> ignore(string("T")) |> concat(time) |> tag(:datetime)
+    |> tag(:datetime)
 
   prival = integer(min: 1, max: 3) |> tag(:prival)
   pri = ignore(string("<")) |> concat(prival) |> ignore(string(">"))

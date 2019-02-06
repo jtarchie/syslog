@@ -26,43 +26,17 @@ defmodule Syslog do
     build(log, p)
   end
 
-  defp build(log, [{:datetime, [year, month, day, hour, minute, second, _, _, _]} | p]) do
-    log = %{
-      log
-      | timestamp: %DateTime{
-          year: year,
-          month: month,
-          day: day,
-          hour: hour,
-          minute: minute,
-          second: second,
-          time_zone: "Etc/UTC",
-          zone_abbr: "UTC",
-          utc_offset: 0,
-          std_offset: 0
-        }
-    }
+  defp build(log, [{:datetime, [timestamp_string]} | p]) do
+    timestamp =
+      case DateTime.from_iso8601(timestamp_string) do
+        {:ok, timestamp, _} ->
+          timestamp
 
-    build(log, p)
-  end
+        _ ->
+          nil
+      end
 
-  defp build(log, [{:datetime, [year, month, day, hour, minute, second, "Z"]} | p]) do
-    log = %{
-      log
-      | timestamp: %DateTime{
-          year: year,
-          month: month,
-          day: day,
-          hour: hour,
-          minute: minute,
-          second: second,
-          time_zone: "Etc/UTC",
-          zone_abbr: "UTC",
-          utc_offset: 0,
-          std_offset: 0
-        }
-    }
-
+    log = %{log | timestamp: timestamp}
     build(log, p)
   end
 
