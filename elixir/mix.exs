@@ -22,7 +22,8 @@ defmodule Syslog.MixProject do
   def deps do
     [
       {:nimble_parsec, "~> 0.2"},
-      {:mix_test_watch, "~> 0.8", only: :dev, runtime: false}
+      {:mix_test_watch, "~> 0.8", only: :dev, runtime: false},
+      {:benchee, "~> 0.13", only: :dev}
     ]
   end
 end

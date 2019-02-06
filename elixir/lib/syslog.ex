@@ -10,10 +10,15 @@ defmodule Syslog do
   end
 
   def parse(msg) do
-    {:ok, val, _, _, _, _} = SyslogParser.message(msg)
+    case SyslogParser.message(msg) do
+      {:ok, val, _, _, _, _} ->
+        SyslogParser.message(msg)
+        log = build(%SyslogLog{structure_data: []}, val)
+        {:ok, log}
 
-    log = build(%SyslogLog{structure_data: []}, val)
-    {log, 0, nil}
+      {:error, msg, _, _, _, _} ->
+        {:error, msg}
+    end
   end
 
   defp build(log, [{:version, version} | p]) do
