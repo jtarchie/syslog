@@ -1,4 +1,5 @@
 defmodule SyslogParser do
+  @compile [:native, {:hipe, [:verbose, :o3]}]
   import NimbleParsec
 
   datetime =

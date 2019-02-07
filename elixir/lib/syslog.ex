@@ -1,14 +1,24 @@
 defmodule Syslog do
+  @compile [:native, {:hipe, [:verbose, :o3]}]
   use Bitwise
 
   defmodule Element do
+    @type t :: %__MODULE__{
+            id: String.t(),
+            properties: list(Property.t())
+          }
     defstruct [:id, :properties]
   end
 
   defmodule Property do
+    @type t :: %__MODULE__{
+            key: String.t(),
+            value: String.t()
+          }
     defstruct [:key, :value]
   end
 
+  @spec parse(String.t()) :: {:ok, SyslogLog.t()} | {:error, String.t()}
   def parse(msg) do
     case SyslogParser.message(msg) do
       {:ok, val, _, _, _, _} ->
@@ -72,7 +82,7 @@ defmodule Syslog do
 
   defp build(log, [{:sd_element, sd_element} | p]) do
     element = build_sd_element(%Element{properties: []}, sd_element)
-    log = %{log | structure_data: [element] ++ log.structure_data}
+    log = %{log | structure_data: [element | log.structure_data]}
     build(log, p)
   end
 
@@ -90,7 +100,7 @@ defmodule Syslog do
   end
 
   defp build_sd_element(element, [{:sd_param, [key, value]} | properties]) do
-    element = %{element | properties: [%Property{key: key, value: value}] ++ element.properties}
+    element = %{element | properties: [%Property{key: key, value: value} | element.properties]}
     build_sd_element(element, properties)
   end
 
