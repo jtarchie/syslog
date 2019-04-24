@@ -5,7 +5,7 @@ destination('app123_logs', {
   type='file',
   config={
     path='/var/log/app123.log',
-    modify_message=function(message)
+    message=function(message)
       -- add a 'log file' string to each app id
       message.app_id = 'log file ' + message.app_id
       return message
@@ -14,7 +14,7 @@ destination('app123_logs', {
 })
 
 -- listen on port 8080 for syslog messages
-listen("tcp:8080", function(message) -- callback for the how to redirect the message and modify it
+listen("udp", 8080, function(message) -- callback for the how to redirect the message and modify it
   if message.app_id == "123" then
     return({message=message, destination={'app123_logs'}})
   end

@@ -1,23 +1,25 @@
 package main
 
 import (
-	lua "github.com/yuin/gopher-lua"
 	"log"
-	"path/filepath"
+
+	lua "github.com/yuin/gopher-lua"
 )
 
-type fileDestination struct {
-	path string
-	messageModifier *lua.LFunction
-}
+type runnerFunc func(string, *lua.LFunction)
+type destination interface{}
 
-type destination interface {}
+type listener interface {
+	Start() error
+	Stop()
+}
 
 func main() {
 	state := lua.NewState()
 	defer state.Close()
 
 	destinations := map[string]destination{}
+	listeners := []listener{}
 
 	state.SetGlobal("destination", state.NewFunction(func(state *lua.LState) int {
 		name := state.ToString(1)
@@ -28,20 +30,11 @@ func main() {
 
 		switch destinationType {
 		case "file":
-			path := destinationConfig.RawGetH(lua.LString("path")).(lua.LString).String()
-			fullPath, err := filepath.Abs(path)
+			d, err := initializeFileDestination(destinationConfig)
 			if err != nil {
-				log.Fatalf("cannot expand path '%s' to absolute path", path)
+				log.Fatalf("error %s", err)
 			}
-
-			messageModifierFn, ok := destinationConfig.RawGetH(lua.LString("path")).(*lua.LFunction)
-			if !ok {
-				log.Fatalf("message modifier method is not a valid lua function")
-			}
-			destinations[name] = fileDestination{
-				path: fullPath,
-				messageModifier: messageModifierFn,
-			}
+			destinations[name] = d
 		default:
 			log.Fatalf("unsupported destination type '%s'", destinationType)
 		}
@@ -49,7 +42,25 @@ func main() {
 		return 0
 	}))
 
-	state.SetGlobal("listen", state.NewFunction(func(lState *lua.LState) int {
+	state.SetGlobal("listen", state.NewFunction(func(state *lua.LState) int {
+		protocol := state.ToString(1)
+		port := state.ToInt(2)
+		router := state.ToFunction(3)
+
+		switch protocol {
+		case "udp":
+			listener, err := initializeUDPlistener(port, router)
+			if err != nil {
+				log.Fatalf("error %s", err)
+			}
+			err = listener.Start()
+			if err != nil {
+				log.Fatalf("error %s", err)
+			}
+			listeners = append(listeners, listener)
+		default:
+			log.Fatalf("unsupported listening protocol '%s'", protocol)
+		}
 		return 0
 	}))
 
