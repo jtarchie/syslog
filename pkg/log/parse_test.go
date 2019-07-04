@@ -14,12 +14,10 @@ const validMessage = `<34>1 2003-10-11T22:14:15.003Z mymachine.example.com su 12
 func ParseLogMessageTests(message string) {
 	var (
 		payload []byte
-		log     *syslog.Log
 	)
 
 	BeforeEach(func() {
 		payload = []byte(message)
-		log = &syslog.Log{}
 	})
 
 	It("parses valid messages", func() {
