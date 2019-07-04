@@ -10,14 +10,14 @@
   bom         = 0xEF 0xBB 0xBF;
   msg_utf8    = bom utf8_string;
   msg_any     = any*;
-  msg         = (msg_any | msg_utf8) >mark %message;
+  msg         = (msg_any | msg_utf8) %message;
 
   sd_name         = printusascii{1,32} -- ("=" | sp | "]" | 34 | '"');
   escaped_chars   = ( "\\" | "]" | '"');
   escaped_state   = ( "\\" escaped_chars ) %escaped;
-  param_value     = ((utf8_string -- escaped_chars) escaped_state*)+ >mark %paramvalue;
-  param_name      = sd_name >mark %paramname;
-  sd_id           = sd_name >mark %sdid;
+  param_value     = ((utf8_string -- escaped_chars) escaped_state*)+ %paramvalue;
+  param_name      = sd_name %paramname;
+  sd_id           = sd_name %sdid;
   sd_param        = param_name '="' param_value :>> '"';
   sd_element      = "[" sd_id ( sp sd_param )* "]";
   structured_data = nil | sd_element{1,};
@@ -34,20 +34,20 @@
   date_month     = digit{2};
   date_fullyear  = digit{4};
   full_date      = date_fullyear "-" date_month "-" date_mday;
-  timestamp      = nil | (full_date "T" full_time) >mark %timestamp;
+  timestamp      = nil | (full_date "T" full_time) %timestamp;
 
-  msg_id   = nil | printusascii{1,32} >mark %msgid;
-  proc_id  = nil | printusascii{1,128} >mark %procid;
-  app_name = nil | printusascii{1,48} >mark %appname;
+  msg_id   = nil | printusascii{1,32} %msgid;
+  proc_id  = nil | printusascii{1,128} %procid;
+  app_name = nil | printusascii{1,48} %appname;
 
-  hostname = nil | printusascii{1,255} >mark %hostname;
-  version  = (nonzero_digit digit{0,2}) >mark %version;
-  prival   = digit{1,3} >mark %priority;
+  hostname = nil | printusascii{1,255} %hostname;
+  version  = (nonzero_digit digit{0,2}) %version;
+  prival   = digit{1,3} %priority;
   pri      = "<" prival ">";
   header   = pri version sp timestamp sp hostname sp app_name sp proc_id sp msg_id;
 
   syslog_msg = header sp structured_data (sp msg)?;
-  tcp_syslog_msg = (digit+ >mark %tcp_len) sp syslog_msg;
+  tcp_syslog_msg = (digit+ %tcp_len) sp syslog_msg;
   main := tcp_syslog_msg | syslog_msg;
 
 }%%

@@ -47,6 +47,7 @@ func Parse(data []byte) (*Log, int, error) {
   var (
     paramName string
     nanosecond int
+    ts int
   )
 
   log := Log{}
@@ -56,40 +57,36 @@ func Parse(data []byte) (*Log, int, error) {
   // set defaults for state machine parsing
   cs, p, pe, eof := 0, 0, len(data), len(data)
 
-  // use to keep track start of value
-  mark := 0
-
   // taken directly from https://tools.ietf.org/html/rfc5424#page-8
   %%{
-    action mark      { mark = p }
-    action tcp_len   { pe, eof = atoi(data[mark:p]) + (p-mark) + 1, atoi(data[mark:p]) + (p-mark) + 1 }
-    action version   { log.version = atoi(data[mark:p]) }
-    action priority  { log.priority = atoi(data[mark:p]) }
-    action hostname  { log.hostname = toString(data[mark:p]) }
-    action appname   { log.appname = toString(data[mark:p]) }
-    action procid    { log.procID = toString(data[mark:p]) }
-    action msgid     { log.msgID = toString(data[mark:p]) }
+    action tcp_len   { pe, eof = atoi(data[ts:p]) + (p-ts) + 1, atoi(data[ts:p]) + (p-ts) + 1 }
+    action version   { log.version = atoi(data[ts:p]) }
+    action priority  { log.priority = atoi(data[ts:p]) }
+    action hostname  { log.hostname = toString(data[ts:p]) }
+    action appname   { log.appname = toString(data[ts:p]) }
+    action procid    { log.procID = toString(data[ts:p]) }
+    action msgid     { log.msgID = toString(data[ts:p]) }
     action sdid      {
       log.data = append(log.data, structureElement{
-        id: string(data[mark:p]),
+        id: string(data[ts:p]),
         properties: make([]Property, 0, 5),
       })
     }
-    action paramname  { paramName = string(data[mark:p]) }
+    action paramname  { paramName = string(data[ts:p]) }
     action escaped    {
-      buffer = append(buffer, data[mark:p-2]...)
+      buffer = append(buffer, data[ts:p-2]...)
       buffer = append(buffer, data[p-1])
-      mark = p
+      ts = p
     }
     action paramvalue {
-      buffer = append(buffer, data[mark:p]...)
+      buffer = append(buffer, data[ts:p]...)
       log.data[len(log.data)-1].properties = append(log.data[len(log.data)-1].properties, Property{paramName,string(buffer)})
       buffer = buffer[:0]
     }
 
     action timestamp {
       location = time.UTC
-      if data[mark+19] == '.' {
+      if data[ts+19] == '.' {
         offset := 1
 
         if data[p-1] != 'Z' {
@@ -104,8 +101,8 @@ func Parse(data []byte) (*Log, int, error) {
             dir * (atoi2(data[p-5:p-3]) * 3600 + atoi(data[p-2:p]) * 60),
           )
         }
-        nbytes := ( p - offset - 1 ) - ( mark + 19 )
-        i := mark + 20
+        nbytes := ( p - offset - 1 ) - ( ts + 19 )
+        i := ts + 20
         first:
           if i < p-offset {
             nanosecond = nanosecond*10 + int(data[i]-'0')
@@ -122,17 +119,17 @@ func Parse(data []byte) (*Log, int, error) {
       }
 
       log.timestamp = time.Date(
-        atoi4(data[mark:mark+4]),
-        time.Month(atoi2(data[mark+5:mark+7])),
-        atoi2(data[mark+8:mark+10]),
-        atoi2(data[mark+11:mark+13]),
-        atoi2(data[mark+14:mark+16]),
-        atoi2(data[mark+17:mark+19]),
+        atoi4(data[ts:ts+4]),
+        time.Month(atoi2(data[ts+5:ts+7])),
+        atoi2(data[ts+8:ts+10]),
+        atoi2(data[ts+11:ts+13]),
+        atoi2(data[ts+14:ts+16]),
+        atoi2(data[ts+17:ts+19]),
         nanosecond,
         location,
       ).UTC()
     }
-    action message { log.message = string(data[mark:p]) }
+    action message { log.message = string(data[ts:p]) }
 
     include syslog_rfc5424 "syslog.rl";
     write init;
