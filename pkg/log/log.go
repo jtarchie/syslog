@@ -3,7 +3,6 @@ package syslog
 //go:generate ragel -e -G2 -Z parse.rl
 
 import (
-	"bytes"
 	"fmt"
 	"strings"
 	"time"
@@ -21,20 +20,20 @@ type structureElement struct {
 	properties []Property
 }
 
-func (s structureElement) ID() string {
+func (s *structureElement) ID() string {
 	return s.id
 }
 
-func (s structureElement) Properties() []Property {
+func (s *structureElement) Properties() []Property {
 	return s.properties
 }
 
-func (s structureElement) String() string {
+func (s *structureElement) String() string {
 	if s.id == "" {
 		return "-"
 	}
 
-	var buffer bytes.Buffer
+	var buffer strings.Builder
 	buffer.WriteString("[")
 	buffer.WriteString(s.id)
 	for _, property := range s.properties {
@@ -50,13 +49,13 @@ func (s structureElement) String() string {
 
 type structureData []structureElement
 
-func (s structureData) String() string {
-	if len(s) == 0 {
+func (s *structureData) String() string {
+	if len(*s) == 0 {
 		return "-"
 	}
 
-	var buffer bytes.Buffer
-	for _, element := range s {
+	var buffer strings.Builder
+	for _, element := range *s {
 		buffer.WriteString(element.String())
 	}
 	return buffer.String()
@@ -119,7 +118,7 @@ func (m *Log) Message() string {
 }
 
 func (m *Log) String() string {
-	var buffer bytes.Buffer
+	var buffer strings.Builder
 	buffer.WriteString("<")
 	buffer.WriteString(fmt.Sprintf("%d", m.priority))
 	buffer.WriteString(">")
