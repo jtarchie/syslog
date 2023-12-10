@@ -6,9 +6,9 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/jtarchie/syslog/pkg/log"
+	syslog "github.com/jtarchie/syslog/pkg/log"
 	"github.com/jtarchie/syslog/pkg/transports"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 

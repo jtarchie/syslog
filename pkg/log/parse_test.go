@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/jtarchie/syslog/pkg/log"
-	. "github.com/onsi/ginkgo"
+	syslog "github.com/jtarchie/syslog/pkg/log"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 

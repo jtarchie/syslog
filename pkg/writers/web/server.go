@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/blevesearch/bleve"
+	"github.com/blevesearch/bleve/v2"
 	bolt "github.com/boltdb/bolt"
 	"github.com/jtarchie/syslog/pkg/log"
 )
